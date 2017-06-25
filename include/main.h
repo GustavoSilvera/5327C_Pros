@@ -58,6 +58,7 @@ void autonomous();
  *
  * The purpose of this function is solely to set the default pin modes (pinMode()) and port
  * states (digitalWrite()) of limit switches, push buttons, and solenoids. It can also safely
+
  * configure a UART port (usartOpen()) but cannot set up an LCD (lcdInit()).
  */
 void initializeIO();
@@ -113,13 +114,15 @@ enum {//motors
     testM = 2,//port2
     RightM = 3,//port3
     LeftM = 4,//port4
-    LiftM = 5//port5
+    LiftM = 5,//port5
+    MoGo = 6
 };
 //#define gyroscope 1
 extern Gyro gyroscope;
 extern Encoder encoder1;
 
 #define potentiometer 2
+#define potentiometer2 3
 
 #define U6  	joystickGetDigital(1,6,JOY_UP)//6U
 #define D6	    joystickGetDigital(1,6,JOY_DOWN)//6D
