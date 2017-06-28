@@ -81,26 +81,21 @@ void MotorSlewRateTask( void * parameters){//slew rate task
 }
 
 int TruSpeed(float value){
-	//printf("truspeed");
 	//for cubic; visit: goo.gl/mhvbx4
-	float TrulySped = (value*value*value) / ((127)*(127));
-	return(TrulySped);
+	return(sign(value)*(value*value) /(127));
 }
 
 void drive(){
-	//printf("drive");
-	motorSlew[RightM] = -1*TruSpeed(joystickGetAnalog(1,2));//y axis for baseRight joystick
-	//motorSlew[RightM] = -1*TruSpeed(joystickGetAnalog(1,2));//y axis for right joystick
-	//motorSlew[LeftM] = TruSpeed(joystickGetAnalog(1,3));//y axis for left  joystick
-	motorSlew[LeftM] = TruSpeed(joystickGetAnalog(1,3));//y acis for left  joystick
-	delay(5);
+	motorSlew[RightBaseM] = -1*TruSpeed(joystickGetAnalog(1,2));//y axis for baseRight joystick
+	motorSlew[LeftBaseM] = TruSpeed(joystickGetAnalog(1,3));//y acis for left  joystick
+	delay(10);
 }
 void lift(int speed){
-	//printf("lift");
-	motorSlew[LiftM] = speed;
+	motorSlew[ChainL] = -speed;
+	motorSlew[ChainR] = speed;
 }
 
-void driveFor(float goal){
+/*void driveFor(float goal){
 	//printf("driveFor");
 	volatile float distanceTrav = 0.0;//amount of distance travelled
 	while ( true ){
@@ -113,7 +108,7 @@ void driveFor(float goal){
 		}
 		delay(15);
 	}
-}
+}*
 void keepArmInPosition( void * parameters){
 	while(true){
 		if(U6 == 0 && D6 == 0){
@@ -127,7 +122,7 @@ void keepArmInPosition( void * parameters){
 		}
 	}
 	return;
-}
+}*/
 
 void updateNav(){
 	//printf("updateNav");
@@ -156,49 +151,51 @@ void debug(){
 	//printf("%d", D6);
 	printf("\n");
 }
+void MobileGoal(){
+	if(U5 == 1){
+		motorSlew[MoGo] = 127;
+	}
+	else if (D5 == 1){
+		motorSlew[MoGo] = -127;
+	}
+	else if (D5 == 0 && U5 == 0){
+		motorSlew[MoGo] = 0;
+	}
+}
+void chainThing(){
+	//bool MAX = (SensorValue[LIFT] < LiftMax);
+	//bool MIN = (SensorValue[LIFT] > LiftMin);
+	if(U6 == 1 && D6 == 1){lift(0);}
+	else if(U6 == 1 ){//&& !MAX){
+		lift(127);//abs(analogRead(potentiometer) - PID.LiftMax )* 3);//change by the difference between its curent position and the maximum (slower at the top, fast when not near the top)
+		//PID.armGoalIsSet = false;
+	}
+	else if (D6 == 1){// && !MIN){
+		lift(-127);//-1 * abs(analogRead(potentiometer) - PID.LiftMin) * 0.5);	//change by the difference betwee the curent position and the bottom, slower at the bottom, while faster when not near the bottom
+		//PID.armGoalIsSet = false;
+	}
+	else{
+		//if(!PID.armGoalIsSet){//recently changed armGoalIsSet
+		//	PID.armGoal = analogRead(potentiometer);
+		//	PID.armGoalIsSet = true;
+		//}
+		lift(0);
+	}
+}
 void operatorControl(){//initializes everythin
 	initializeOpControl();
 
 	TaskHandle SlewRateMotorTask = taskCreate(MotorSlewRateTask, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
 	//startTask(updateNav);
-	TaskHandle PIDTask = taskCreate(keepArmInPosition, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
+	////TaskHandle PIDTask = taskCreate(keepArmInPosition, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
 
 	taskResume(SlewRateMotorTask);
-	taskResume(PIDTask);
+	////taskResume(PIDTask);
 	while(true){
 		debug();
 		drive();
-	//	if(L7 == 1){driveFor(140.5);}//should do ~11.2
-
-		//bool MAX = (SensorValue[LIFT] < LiftMax);
-		//bool MIN = (SensorValue[LIFT] > LiftMin);
-		if(U5 == 1){
-			motorSlew[MoGo] = 127;
-		}
-		else if (D5 == 1){
-			motorSlew[MoGo] = -127;
-		}
-		else if (D5 == 0 && U5 == 0){
-			motorSlew[MoGo] = 0;
-		}
-		if(U6 == 1 && D6 == 1){
-			motorSlew[LiftM] = 0;
-
-		}
-		else if(U6 == 1 ){//&& !MAX){
-			motorSlew[LiftM] = 127;//abs(analogRead(potentiometer) - PID.LiftMax )* 3);//change by the difference between its curent position and the maximum (slower at the top, fast when not near the top)
-			PID.armGoalIsSet = false;
-		}
-		else if (D6 == 1){// && !MIN){
-			motorSlew[LiftM] = -127;//-1 * abs(analogRead(potentiometer) - PID.LiftMin) * 0.5);	//change by the difference betwee the curent position and the bottom, slower at the bottom, while faster when not near the bottom
-			PID.armGoalIsSet = false;
-		}
-		else{
-			if(!PID.armGoalIsSet){//recently changed armGoalIsSet
-				PID.armGoal = analogRead(potentiometer);
-				PID.armGoalIsSet = true;
-			}
-		}
+		MobileGoal();
+		chainThing();
 		delay(10);
 	}
 }

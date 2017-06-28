@@ -111,11 +111,11 @@ void operatorControl();
 
 enum {//motors
     useless = 1,//port1 (DONT EVER USE)
-    testM = 2,//port2
-    RightM = 3,//port3
-    LeftM = 4,//port4
-    LiftM = 5,//port5
-    MoGo = 6
+    RightBaseM = 2,//right base motors
+    LeftBaseM = 3,//left base motors
+    ChainL = 4,//leftf chain motors
+    ChainR = 5,//right chain motors
+    MoGo = 6//mobile goal
 };
 //#define gyroscope 1
 extern Gyro gyroscope;
