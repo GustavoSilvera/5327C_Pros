@@ -28,7 +28,8 @@ void initializeIO() {
 void initialize() {
     gyroscope = gyroInit(1, 0);//port 1 no multiplier
     encoder1 = encoderInit(1, 2, false);
-
+    ripperEncoder = encoderInit(3, 4, false);
 	encoderReset(encoder1);
+    encoderReset(ripperEncoder);
 	gyroReset(gyroscope);
 }

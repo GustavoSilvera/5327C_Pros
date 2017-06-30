@@ -2,20 +2,31 @@
 #include <math.h>
 #include "PORTS.h"
 
+//#define PID_SENSOR_SCALE    1
+
+#define PID_MOTOR_SCALE     -1
+
+#define PID_DRIVE_MAX       127
+#define PID_DRIVE_MIN     (-127)
+
+#define PID_INTEGRAL_LIMIT  50
+
 struct robot{
 	float Xpos;
 	float Ypos;
 	float deg;
 };
 struct robot current;
-
+float kP = 0.2;//remove later
+float kI = 0.04;//remove later
+float kD = 0.0;//remove later
 struct maintainPosition{
+	bool isRunning;
 	int threshold;
-	float kP;
-	float armGoal;
-	bool armGoalIsSet;
-	int LiftMax;
-	int LiftMin;
+	float error, integral, derivative, lastError;
+	float currentPos;
+	float requestedValue;
+	//, kI, kD;
 };
 volatile struct maintainPosition PID;
 
@@ -29,14 +40,10 @@ int SlewAmount[MOTOR_AMOUNT];//for each motor
 
 Gyro gyroscope;
 Encoder encoder1;
+Encoder ripperEncoder;
 
 void initializeOpControl(){
-	PID.armGoal = analogRead(potentiometer); // bottom left
-	PID.threshold = 7;
-	PID.kP = 0.09;
-	PID.armGoalIsSet = false;
-	PID.LiftMax = 660;
-	PID.LiftMin = 1950;
+	//PID.armGoal = analogRead(potentiometer); // bottom left
 	//gyroShutdown(gyroscope);//resets gyro sensor, rly sketchy
 	//gyroscope = gyroInit(1,0);
 	current.Xpos = 0.0;
@@ -76,11 +83,50 @@ void MotorSlewRateTask( void * parameters){//slew rate task
 				//motorSet(motorI, motorGet(motorI));
 			}
 		}
-		delay(20);//delay 15ms
+		delay(25);//delay 15ms
 	}
 }
+void pidController(void * parameters){
+    // If we are using an encoder then clear it
+	encoderReset(ripperEncoder);
+    PID.lastError = 0;
+    PID.integral = 0;
+    while(true){
+        if( PID.isRunning ){
+            PID.currentPos = digitalRead(ripperEncoder);// * sensorScale;idk if i need this, probs not.
+            PID.error = PID.currentPos - PID.requestedValue;//calculate error
+            // integral - if Ki is not 0
+            if( kI != 0 ){
+                if( abs(PID.error) < PID_INTEGRAL_LIMIT ){
+                    PID.integral += PID.error;
+				}
+                else{
+                    PID.integral = 0;
+				}
+            }
+            else{
+                PID.integral = 0;
+			}
+            // calculate the derivative
+            PID.derivative = PID.error - PID.lastError;
+            PID.lastError  = PID.error;
+            // calculate drive
+			motorSlew[ChainL] = ( (kP * PID.error) + (kI * PID.integral) + (kD * PID.derivative) );
+			motorSlew[ChainR] = ( (kP * PID.error) + (kI * PID.integral) + (kD * PID.derivative) );
+		}
+        else{
+            // clear all
+            PID.error = 0;
+            PID.lastError = 0;
+            PID.integral = 0;
+            PID.derivative = 0;
+        }
+        // Run at 50Hz
+        delay(25);
+    }
+}
 
-int TruSpeed(float value){
+float TruSpeed(float value){
 	//for cubic; visit: goo.gl/mhvbx4
 	return(sign(value)*(value*value) /(127));
 }
@@ -108,8 +154,8 @@ void lift(int speed){
 		}
 		delay(15);
 	}
-}*
-void keepArmInPosition( void * parameters){
+}*/
+/*void keepArmInPosition( void * parameters){
 	while(true){
 		if(U6 == 0 && D6 == 0){
 			if(abs(analogRead(potentiometer) - PID.armGoal) > PID.threshold){//greater than threshold of 20 LIFTentiometer ticks
@@ -134,10 +180,6 @@ void updateNav(){
 		current.Ypos += sin(current.deg)*(180/PI)*Mag;//sine of angle times magnitude RADIANS(vector trig)
 		current.deg = gyroGet(gyroscope)/10;//gyro reads from0 to 3599, thus 0 to 360 times 10
 		currentDIR += Mag;
-		//debug
-		/*writeDebugStream("%f", currentDIR/140.5);
-		writeDebugStreamLine("");*/
-		//end_debug
 		encoderReset(encoder1);//resets the quad encoder to have a noticible change in encoder values, rather than always adding a large value
 	//	gyroReset(gyroscope);//resets the gyro to refresh with multiple small changes in rotation values
 		delay(25);//refresh every 25ms
@@ -162,24 +204,27 @@ void MobileGoal(){
 		motorSlew[MoGo] = 0;
 	}
 }
-void chainThing(){
+void ripper(){
 	//bool MAX = (SensorValue[LIFT] < LiftMax);
 	//bool MIN = (SensorValue[LIFT] > LiftMin);
-	if(U6 == 1 && D6 == 1){lift(0);}
+	if(U6 == 1 && D6 == 1){lift(0);PID.isRunning = false;}
 	else if(U6 == 1 ){//&& !MAX){
+		PID.isRunning = false;
 		lift(127);//abs(analogRead(potentiometer) - PID.LiftMax )* 3);//change by the difference between its curent position and the maximum (slower at the top, fast when not near the top)
 		//PID.armGoalIsSet = false;
 	}
 	else if (D6 == 1){// && !MIN){
+		PID.isRunning = false;
 		lift(-127);//-1 * abs(analogRead(potentiometer) - PID.LiftMin) * 0.5);	//change by the difference betwee the curent position and the bottom, slower at the bottom, while faster when not near the bottom
 		//PID.armGoalIsSet = false;
 	}
 	else{
+		PID.isRunning = true;
+
 		//if(!PID.armGoalIsSet){//recently changed armGoalIsSet
 		//	PID.armGoal = analogRead(potentiometer);
 		//	PID.armGoalIsSet = true;
 		//}
-		lift(0);
 	}
 }
 void operatorControl(){//initializes everythin
@@ -187,15 +232,14 @@ void operatorControl(){//initializes everythin
 
 	TaskHandle SlewRateMotorTask = taskCreate(MotorSlewRateTask, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
 	//startTask(updateNav);
-	////TaskHandle PIDTask = taskCreate(keepArmInPosition, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
-
+	TaskHandle PIDTask = taskCreate(pidController, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
 	taskResume(SlewRateMotorTask);
-	////taskResume(PIDTask);
+	taskResume(PIDTask);
 	while(true){
 		debug();
 		drive();
 		MobileGoal();
-		chainThing();
+		ripper();
 		delay(10);
 	}
 }

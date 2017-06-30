@@ -120,6 +120,7 @@ enum {//motors
 //#define gyroscope 1
 extern Gyro gyroscope;
 extern Encoder encoder1;
+extern Encoder ripperEncoder;
 
 #define potentiometer 2
 #define potentiometer2 3
