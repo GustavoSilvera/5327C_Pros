@@ -17,9 +17,7 @@ struct robot{
 	float deg;
 };
 struct robot current;
-float kP = 0.2;//remove later
-float kI = 0.04;//remove later
-float kD = 0.0;//remove later
+
 struct maintainPosition{
 	bool isRunning;
 	int threshold;
@@ -87,6 +85,9 @@ void MotorSlewRateTask( void * parameters){//slew rate task
 	}
 }
 void pidController(void * parameters){
+	float kP = 0.2;//remove later
+	float kI = 25;//remove later
+	float kD = 0.0;//remove later
     // If we are using an encoder then clear it
 	encoderReset(ripperEncoder);
     PID.lastError = 0;
@@ -95,10 +96,9 @@ void pidController(void * parameters){
         if( PID.isRunning ){
             PID.currentPos = digitalRead(ripperEncoder);// * sensorScale;idk if i need this, probs not.
             PID.error = PID.currentPos - PID.requestedValue;//calculate error
-            // integral - if Ki is not 0
             if( kI != 0 ){
                 if( abs(PID.error) < PID_INTEGRAL_LIMIT ){
-                    PID.integral += PID.error;
+                    PID.integral += PID.error;//used for averaging the integral amount, later in motor power divided by 25
 				}
                 else{
                     PID.integral = 0;
@@ -110,9 +110,9 @@ void pidController(void * parameters){
             // calculate the derivative
             PID.derivative = PID.error - PID.lastError;
             PID.lastError  = PID.error;
-            // calculate drive
+            // calculate drive (in this case, just for the chain (ripper) )
 			motorSlew[ChainL] = ( (kP * PID.error) + (kI * PID.integral) + (kD * PID.derivative) );
-			motorSlew[ChainR] = ( (kP * PID.error) + (kI * PID.integral) + (kD * PID.derivative) );
+			motorSlew[ChainR] = ( (kP * PID.error) + (PID.integral/kI) + (kD * PID.derivative) );
 		}
         else{
             // clear all
@@ -219,13 +219,10 @@ void ripper(){
 		//PID.armGoalIsSet = false;
 	}
 	else{
+		PID.requestedValue = digitalRead(ripperEncoder);
 		PID.isRunning = true;
-
-		//if(!PID.armGoalIsSet){//recently changed armGoalIsSet
-		//	PID.armGoal = analogRead(potentiometer);
-		//	PID.armGoalIsSet = true;
-		//}
 	}
+	delay(15);
 }
 void operatorControl(){//initializes everythin
 	initializeOpControl();
