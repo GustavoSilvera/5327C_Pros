@@ -113,14 +113,15 @@ enum {//motors
     useless = 1,//port1 (DONT EVER USE)
     RightBaseM = 2,//right base motors
     LeftBaseM = 3,//left base motors
-    ChainL = 4,//leftf chain motors
-    ChainR = 5,//right chain motors
+    RightLiftM = 4,//leftf chain motors
+    LeftLiftM = 5,//right chain motors
     MoGo = 6//mobile goal
 };
 //#define gyroscope 1
 extern Gyro gyroscope;
 extern Encoder encoder1;
 extern Encoder ripperEncoder;
+extern Ultrasonic Usonic;
 
 #define potentiometer 2
 #define potentiometer2 3
@@ -138,7 +139,7 @@ extern Encoder ripperEncoder;
 #define U7  	joystickGetDigital(1,7,JOY_UP)//7U
 #define D7	    joystickGetDigital(1,7,JOY_DOWN)//7D
 #define L7    	joystickGetDigital(1,7,JOY_LEFT)//7L
-#define R7	    joystickGetDigital(1,7,JOY_Right)//7R
+#define R7	    joystickGetDigital(1,7,JOY_RIGHT)//7R
 
 // End C++ export structure
 #ifdef __cplusplus

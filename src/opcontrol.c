@@ -5,10 +5,8 @@
 //#define PID_SENSOR_SCALE    1
 
 #define PID_MOTOR_SCALE     -1
-
 #define PID_DRIVE_MAX       127
 #define PID_DRIVE_MIN     (-127)
-
 #define PID_INTEGRAL_LIMIT  50
 
 struct robot{
@@ -19,10 +17,10 @@ struct robot{
 struct robot current;
 
 struct maintainPosition{
-	bool isRunning;
+	bool isRunning, armGoalIsSet;
 	int threshold;
 	float error, integral, derivative, lastError;
-	float currentPos;
+	int currentPos;
 	float requestedValue;
 	//, kI, kD;
 };
@@ -30,25 +28,31 @@ volatile struct maintainPosition PID;
 
 #define PI 3.1415926535898628
 #define MOTOR_AMOUNT 6
+#define MIN 0
+#define MAX 2500
+#define PIDRequestType analogRead(potentiometer)
+
 //const in c means only READ ONLY
 // Array for requested speed of motors
 int motorSlew[MOTOR_AMOUNT];//for each motor
 // Array to hold change values for each motor
 int SlewAmount[MOTOR_AMOUNT];//for each motor
+volatile bool toggle = false;
 
 Gyro gyroscope;
 Encoder encoder1;
 Encoder ripperEncoder;
+Ultrasonic Usonic;
 
 void initializeOpControl(){
-	//PID.armGoal = analogRead(potentiometer); // bottom left
-	//gyroShutdown(gyroscope);//resets gyro sensor, rly sketchy
-	//gyroscope = gyroInit(1,0);
+	PID.requestedValue = 2000;
+	PID.isRunning = true;
+	gyroShutdown(gyroscope);//resets gyro sensor, rly sketchy
+	gyroscope = gyroInit(1,0);
 	current.Xpos = 0.0;
 	current.Ypos = 0.0;
 	current.deg = 0.0;
 }
-
 float avg(float val1, float val2){return (val1 + val2 )	* 0.5;}//func for avg
 int sign(int check){
 	if (check < 0){return -1;}
@@ -58,10 +62,16 @@ int sign(int check){
 void MotorSlewRateTask( void * parameters){//slew rate task
 	printf("slewRate");
 	int motorI;//which motor are we talking about? INDEX
-	for(motorI = 0; motorI <= MOTOR_AMOUNT; motorI++){//resets for each motor
-		motorSlew[motorI] = 0;//for each motor, the requested speed is 0
-		SlewAmount[motorI] = 10;//allow the initial slew change to be 15 (anything else and the motor basically wont move)
-	}
+	//for(motorI = 0; motorI <= MOTOR_AMOUNT; motorI++){//resets for each motor
+	//	motorSlew[motorI] = 0;//for each motor, the requested speed is 0
+	//	SlewAmount[motorI] = 20;//allow the initial slew change to be 15 (anything else and the motor basically wont move)
+	//}//USED FOR INITIALIZING EVERY MOTOR_AMOUNT
+	SlewAmount[useless] = 10;//useless motre anyways.
+	SlewAmount[RightBaseM] = 25;//lots o' speed
+	SlewAmount[LeftBaseM] = 25;//lots o' speed
+	SlewAmount[RightLiftM] = 20;//speed
+	SlewAmount[LeftLiftM] = 20;//want more speed
+	SlewAmount[MoGo] = 10;//higher torque
 	while(true){// run loop for every motor
 		for( motorI = 0; motorI <= MOTOR_AMOUNT; motorI++){
 			//motorCurrent = motor[ motorIndex ];
@@ -84,45 +94,83 @@ void MotorSlewRateTask( void * parameters){//slew rate task
 		delay(25);//delay 15ms
 	}
 }
+void lift(float speed){
+	motorSlew[RightLiftM] = speed;
+	motorSlew[LeftLiftM] = -speed;
+}
 void pidController(void * parameters){
-	float kP = 0.2;//remove later
+	float kP = 0.06;//remove later
 	float kI = 25;//remove later
 	float kD = 0.0;//remove later
     // If we are using an encoder then clear it
 	encoderReset(ripperEncoder);
     PID.lastError = 0;
     PID.integral = 0;
+	PID.error = 0;
+	PID.derivative = 0;
+	PID.currentPos = analogRead(potentiometer);
+	PID.threshold = 7;//sets potentiometer threshold
+	int direction = 0;
     while(true){
-        if( PID.isRunning ){
-            PID.currentPos = digitalRead(ripperEncoder);// * sensorScale;idk if i need this, probs not.
-            PID.error = PID.currentPos - PID.requestedValue;//calculate error
-            if( kI != 0 ){
-                if( abs(PID.error) < PID_INTEGRAL_LIMIT ){
-                    PID.integral += PID.error;//used for averaging the integral amount, later in motor power divided by 25
+		if(PID.isRunning){
+			//initializePID
+			if(direction == 0){
+				if(PID.currentPos > PID.requestedValue) {//if currenlty higher than requested, must go down (-)
+					direction = -1;//lift will ideally go down
 				}
-                else{
-                    PID.integral = 0;
+				else{
+					direction = 1;
 				}
-            }
-            else{
-                PID.integral = 0;
 			}
-            // calculate the derivative
-            PID.derivative = PID.error - PID.lastError;
-            PID.lastError  = PID.error;
-            // calculate drive (in this case, just for the chain (ripper) )
-			motorSlew[ChainL] = ( (kP * PID.error) + (kI * PID.integral) + (kD * PID.derivative) );
-			motorSlew[ChainR] = ( (kP * PID.error) + (PID.integral/kI) + (kD * PID.derivative) );
+			//start main loop
+			PID.currentPos = PIDRequestType;// * sensorScale;idk if i need this, probs not.
+			if(abs(PID.currentPos - PID.requestedValue) > PID.threshold){
+				if(direction == -1){
+					if(PID.currentPos < PID.requestedValue){
+						lift(0);
+						direction = 0;
+					}
+				}
+				else{
+					if(PID.currentPos > PID.requestedValue){
+						lift(0);
+						direction = 0;
+					}
+				}
+	        	PID.error = PID.currentPos - PID.requestedValue;//calculate error
+				if( kI != 0 ){
+	                if( abs(PID.error) < PID_INTEGRAL_LIMIT ){
+	                    PID.integral += PID.error;//used for averaging the integral amount, later in motor power divided by 25
+					}
+	                else{
+	                    PID.integral = 0;
+					}
+	            }
+	            else{
+                	PID.integral = 0;
+				}
+
+            	// calculate the derivative
+            	PID.derivative = PID.error - PID.lastError;
+            	PID.lastError  = PID.error;
+            	// calculate drive
+					int power = -1*(kP * PID.error) + (PID.integral / kI) + (kD * PID.derivative) ;
+				if(abs(power) > 14){
+					//NO SLEW RATE (DOSENT UPDATE AS FAST)
+					motorSet(RightLiftM, (int)power);
+					motorSet(LeftLiftM, (int)(-power));
+				}
+	    		// Run at 50Hz
+				delay(15);
+			}
 		}
-        else{
-            // clear all
-            PID.error = 0;
-            PID.lastError = 0;
-            PID.integral = 0;
-            PID.derivative = 0;
-        }
-        // Run at 50Hz
-        delay(25);
+		else{
+			PID.lastError = 0;
+			PID.integral = 0;
+			PID.error = 0;
+			PID.derivative = 0;
+		}
+        delay(5);
     }
 }
 
@@ -130,17 +178,11 @@ float TruSpeed(float value){
 	//for cubic; visit: goo.gl/mhvbx4
 	return(sign(value)*(value*value) /(127));
 }
-
 void drive(){
 	motorSlew[RightBaseM] = -1*TruSpeed(joystickGetAnalog(1,2));//y axis for baseRight joystick
 	motorSlew[LeftBaseM] = TruSpeed(joystickGetAnalog(1,3));//y acis for left  joystick
 	delay(10);
 }
-void lift(int speed){
-	motorSlew[ChainL] = -speed;
-	motorSlew[ChainR] = speed;
-}
-
 /*void driveFor(float goal){
 	//printf("driveFor");
 	volatile float distanceTrav = 0.0;//amount of distance travelled
@@ -170,12 +212,11 @@ void lift(int speed){
 	return;
 }*/
 
-void updateNav(){
+void updateNav(){//not working, use simulation to precisely measure
 	//printf("updateNav");
 	float currentDIR = 0;
 	while(true){
 		float Mag = (SensorValue(encoder1) * 4 *PI)/(360);//function for adding the change in inches to current posiiton
-
 		current.Xpos += cos(current.deg)*(180/PI)*Mag;//cosine of angle times magnitude RADIANS(vector trig)
 		current.Ypos += sin(current.deg)*(180/PI)*Mag;//sine of angle times magnitude RADIANS(vector trig)
 		current.deg = gyroGet(gyroscope)/10;//gyro reads from0 to 3599, thus 0 to 360 times 10
@@ -187,8 +228,8 @@ void updateNav(){
 }
 void debug(){
 	//printf("%f", ((encoderGet(encoder1) * 4 *PI)/(360)));
-	//printf("%d", encoderGet(encoder1));
-	printf("%d", analogRead(potentiometer2));
+	printf("%d", motorGet(5));
+	//printf("%d", ultrasonicGet(Usonic));
 	//printf("%d", gyroGet(gyroscope));
 	//printf("%d", D6);
 	printf("\n");
@@ -204,39 +245,64 @@ void MobileGoal(){
 		motorSlew[MoGo] = 0;
 	}
 }
-void ripper(){
+void DannyLift(){
 	//bool MAX = (SensorValue[LIFT] < LiftMax);
 	//bool MIN = (SensorValue[LIFT] > LiftMin);
-	if(U6 == 1 && D6 == 1){lift(0);PID.isRunning = false;}
-	else if(U6 == 1 ){//&& !MAX){
+	///POTENTIOMETER: analogRead(potentiometer)
+
+	if(U6 == 1 || D6 == 1){
+		PID.armGoalIsSet = false;
 		PID.isRunning = false;
-		lift(127);//abs(analogRead(potentiometer) - PID.LiftMax )* 3);//change by the difference between its curent position and the maximum (slower at the top, fast when not near the top)
-		//PID.armGoalIsSet = false;
-	}
-	else if (D6 == 1){// && !MIN){
-		PID.isRunning = false;
-		lift(-127);//-1 * abs(analogRead(potentiometer) - PID.LiftMin) * 0.5);	//change by the difference betwee the curent position and the bottom, slower at the bottom, while faster when not near the bottom
-		//PID.armGoalIsSet = false;
+		if(U6 == 1 ){//&& !MAX){
+			lift(127);//abs(analogRead(potentiometer) - PID.LiftMax )* 3);//change by the difference between its curent position and the maximum (slower at the top, fast when not near the top)
+		}
+		if (D6 == 1){// && !MIN){
+			lift(-127);//-1 * abs(analogRead(potentiometer) - PID.LiftMin) * 0.5);	//change by the difference betwee the curent position and the bottom, slower at the bottom, while faster when not near the bottom
+		}
 	}
 	else{
-		PID.requestedValue = digitalRead(ripperEncoder);
+		if(!PID.armGoalIsSet){
+			PID.requestedValue = PIDRequestType;
+			PID.armGoalIsSet = true;
+		}
 		PID.isRunning = true;
 	}
-	delay(15);
+	delay(10);
+}
+void intake(){
+    if(U8 == 1){toggle = !toggle;}
+    if(toggle){
+        digitalWrite(3, HIGH);
+    }
+    else{//toggle is false
+        digitalWrite(3, LOW);
+    }
+    delay(200);
 }
 void operatorControl(){//initializes everythin
 	initializeOpControl();
-
+	PID.requestedValue = PIDRequestType;
 	TaskHandle SlewRateMotorTask = taskCreate(MotorSlewRateTask, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
 	//startTask(updateNav);
 	TaskHandle PIDTask = taskCreate(pidController, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
 	taskResume(SlewRateMotorTask);
 	taskResume(PIDTask);
 	while(true){
+		if(L7 == 1){
+			PID.requestedValue = 2000;
+			PID.armGoalIsSet = true;
+			PID.isRunning = true;
+		}
+		if(R7 == 1){
+			PID.requestedValue = 3000;
+			PID.armGoalIsSet = true;
+			PID.isRunning = true;
+		}
 		debug();
 		drive();
+		intake();
 		MobileGoal();
-		ripper();
-		delay(10);
+		DannyLift();
+		delay(1);
 	}
 }
