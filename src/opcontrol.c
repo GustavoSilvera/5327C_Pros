@@ -28,9 +28,8 @@ volatile struct maintainPosition PID;
 
 #define PI 3.1415926535898628
 #define MOTOR_AMOUNT 6
-#define MIN 0
-#define MAX 2500
-#define PIDRequestType analogRead(potentiometer)
+#define PIDSensorType encoderGet(encoder1)
+//analogRead(potentiometer)
 
 //const in c means only READ ONLY
 // Array for requested speed of motors
@@ -45,7 +44,7 @@ Encoder ripperEncoder;
 Ultrasonic Usonic;
 
 void initializeOpControl(){
-	PID.requestedValue = 2000;
+	PID.requestedValue = 200;
 	PID.isRunning = true;
 	gyroShutdown(gyroscope);//resets gyro sensor, rly sketchy
 	gyroscope = gyroInit(1,0);
@@ -53,12 +52,14 @@ void initializeOpControl(){
 	current.Ypos = 0.0;
 	current.deg = 0.0;
 }
-float avg(float val1, float val2){return (val1 + val2 )	* 0.5;}//func for avg
-int sign(int check){
-	if (check < 0){return -1;}
-	else if (check > 0){return 1;}
+float avg(float val1, float val2){
+	return (val1 + val2 ) * 0.5;
+}//func for avg
+float getSign(float check){
+	if (check < 0) return -1;
+	else if (check > 0) return 1;
 	else return 0;
-}
+}//func for getting sign of a number
 void MotorSlewRateTask( void * parameters){//slew rate task
 	printf("slewRate");
 	int motorI;//which motor are we talking about? INDEX
@@ -69,8 +70,8 @@ void MotorSlewRateTask( void * parameters){//slew rate task
 	SlewAmount[useless] = 10;//useless motre anyways.
 	SlewAmount[RightBaseM] = 25;//lots o' speed
 	SlewAmount[LeftBaseM] = 25;//lots o' speed
-	SlewAmount[RightLiftM] = 20;//speed
-	SlewAmount[LeftLiftM] = 20;//want more speed
+	SlewAmount[ChainBar] = 20;//speed
+	SlewAmount[DannyLiftM] = 20;//want more speed
 	SlewAmount[MoGo] = 10;//higher torque
 	while(true){// run loop for every motor
 		for( motorI = 0; motorI <= MOTOR_AMOUNT; motorI++){
@@ -93,76 +94,46 @@ void MotorSlewRateTask( void * parameters){//slew rate task
 		}
 		delay(25);//delay 15ms
 	}
-}
+}//task for "slew"-ing the motres by adding to their power via loops
 void lift(float speed){
-	motorSlew[RightLiftM] = speed;
-	motorSlew[LeftLiftM] = -speed;
-}
+	motorSlew[DannyLiftM] = speed;
+}//function for controlling the danny lift (1 motor y cabled one motor has to be reversed)
 void pidController(void * parameters){
-	float kP = 0.06;//remove later
+	float kP = 0.2;//remove later
 	float kI = 25;//remove later
-	float kD = 0.0;//remove later
+	float kD = 0.1;//remove later
     // If we are using an encoder then clear it
-	encoderReset(ripperEncoder);
+	encoderReset(encoder1);
     PID.lastError = 0;
     PID.integral = 0;
 	PID.error = 0;
 	PID.derivative = 0;
-	PID.currentPos = analogRead(potentiometer);
-	PID.threshold = 7;//sets potentiometer threshold
-	int direction = 0;
+	PID.currentPos = PIDSensorType;
+	PID.threshold = 30;//sets error threshold
     while(true){
 		if(PID.isRunning){
 			//initializePID
-			if(direction == 0){
-				if(PID.currentPos > PID.requestedValue) {//if currenlty higher than requested, must go down (-)
-					direction = -1;//lift will ideally go down
-				}
-				else{
-					direction = 1;
-				}
-			}
 			//start main loop
-			PID.currentPos = PIDRequestType;// * sensorScale;idk if i need this, probs not.
-			if(abs(PID.currentPos - PID.requestedValue) > PID.threshold){
-				if(direction == -1){
-					if(PID.currentPos < PID.requestedValue){
-						lift(0);
-						direction = 0;
-					}
-				}
-				else{
-					if(PID.currentPos > PID.requestedValue){
-						lift(0);
-						direction = 0;
-					}
-				}
-	        	PID.error = PID.currentPos - PID.requestedValue;//calculate error
-				if( kI != 0 ){
-	                if( abs(PID.error) < PID_INTEGRAL_LIMIT ){
-	                    PID.integral += PID.error;//used for averaging the integral amount, later in motor power divided by 25
-					}
-	                else{
-	                    PID.integral = 0;
-					}
-	            }
-	            else{
-                	PID.integral = 0;
-				}
-
-            	// calculate the derivative
-            	PID.derivative = PID.error - PID.lastError;
-            	PID.lastError  = PID.error;
-            	// calculate drive
-					int power = -1*(kP * PID.error) + (PID.integral / kI) + (kD * PID.derivative) ;
-				if(abs(power) > 14){
-					//NO SLEW RATE (DOSENT UPDATE AS FAST)
-					motorSet(RightLiftM, (int)power);
-					motorSet(LeftLiftM, (int)(-power));
-				}
-	    		// Run at 50Hz
-				delay(15);
+			PID.currentPos = PIDSensorType;// * sensorScale;idk if i need this, probs not.
+			if(abs(PID.currentPos - PID.requestedValue) > PID.threshold)//if not within threshold
+				PID.error = PID.currentPos - PID.requestedValue;//calculate directly proportional error
+			else PID.error = 0;//else no error, its good enough
+			if( kI != 0 ){
+                if( abs(PID.error) < PID_INTEGRAL_LIMIT ) PID.integral += PID.error;//used for averaging the integral amount, later in motor power divided by 25
+                else PID.integral = 0;
+            }
+            else
+            	PID.integral = 0;
+        	// calculate the derivative
+        	PID.derivative = PID.error - PID.lastError;
+        	PID.lastError  = PID.error;
+        	// calculate drive
+				int power = (kP * PID.error) + (PID.integral / kI) + (kD * PID.derivative) ;
+			if(abs(power) > 14){
+				//NO SLEW RATE (DOSENT UPDATE AS FAST)
+				if(getSign(-power) == -1) motorSet(DannyLiftM, -power);
 			}
+    		// Run at 50Hz
 		}
 		else{
 			PID.lastError = 0;
@@ -170,19 +141,18 @@ void pidController(void * parameters){
 			PID.error = 0;
 			PID.derivative = 0;
 		}
-        delay(5);
+        delay(10);
     }
-}
-
+}//task for a PID lift controller, not implemented well YET, ignore for now
 float TruSpeed(float value){
-	//for cubic; visit: goo.gl/mhvbx4
-	return(sign(value)*(value*value) /(127));
-}
+	//for all other polynomials; visit: goo.gl/mhvbx4
+	return(getSign(value)*(value*value) /(127));
+}//function for calculating the truSpeed function based off a quadratic polynomial
 void drive(){
 	motorSlew[RightBaseM] = -1*TruSpeed(joystickGetAnalog(1,2));//y axis for baseRight joystick
 	motorSlew[LeftBaseM] = TruSpeed(joystickGetAnalog(1,3));//y acis for left  joystick
 	delay(10);
-}
+}//function for driving the robot
 /*void driveFor(float goal){
 	//printf("driveFor");
 	volatile float distanceTrav = 0.0;//amount of distance travelled
@@ -197,21 +167,7 @@ void drive(){
 		delay(15);
 	}
 }*/
-/*void keepArmInPosition( void * parameters){
-	while(true){
-		if(U6 == 0 && D6 == 0){
-			if(abs(analogRead(potentiometer) - PID.armGoal) > PID.threshold){//greater than threshold of 20 LIFTentiometer ticks
-				lift((analogRead(potentiometer) - PID.armGoal) * PID.kP);//lifts by the error value, stays at 127 if too large, ises constant scale factor of 0.5 to change when the deceleration process begins, and by how much the deceleration increases
-			}
-			else {//within threshold
-				lift(0);//stops lift motors
-			}
-			delay(25);
-		}
-	}
-	return;
-}*/
-
+//ignore// function for driving the robot a little bit
 void updateNav(){//not working, use simulation to precisely measure
 	//printf("updateNav");
 	float currentDIR = 0;
@@ -225,84 +181,77 @@ void updateNav(){//not working, use simulation to precisely measure
 	//	gyroReset(gyroscope);//resets the gyro to refresh with multiple small changes in rotation values
 		delay(25);//refresh every 25ms
 	}
-}
+}//function for calculating the current position of the robot baed off basic vector algebra and trig
 void debug(){
-	//printf("%f", ((encoderGet(encoder1) * 4 *PI)/(360)));
-	printf("%d", motorGet(5));
+	printf("%d", encoderGet(encoder1));
+	//printf("%f", analogRead(potentiometer));
 	//printf("%d", ultrasonicGet(Usonic));
 	//printf("%d", gyroGet(gyroscope));
 	//printf("%d", D6);
 	printf("\n");
-}
+}//function for debugging sensor values and outputs to text terminal
 void MobileGoal(){
-	if(U5 == 1){
-		motorSlew[MoGo] = 127;
-	}
-	else if (D5 == 1){
-		motorSlew[MoGo] = -127;
-	}
-	else if (D5 == 0 && U5 == 0){
-		motorSlew[MoGo] = 0;
-	}
-}
-void DannyLift(){
-	//bool MAX = (SensorValue[LIFT] < LiftMax);
-	//bool MIN = (SensorValue[LIFT] > LiftMin);
+	if(U8 == 1)	motorSlew[MoGo] = 127;
+	else if (D8 == 1) motorSlew[MoGo] = -127;
+	else if (D8 == 0 && U8 == 0) motorSlew[MoGo] = 0;
+}//function for controlling the position of the mobile goal intake
+void DannyLiftPID(){
+	bool MAX = (encoderGet(encoder1) >= 600);
+	bool MIN = (encoderGet(encoder1) <= 10);
 	///POTENTIOMETER: analogRead(potentiometer)
-
 	if(U6 == 1 || D6 == 1){
 		PID.armGoalIsSet = false;
 		PID.isRunning = false;
-		if(U6 == 1 ){//&& !MAX){
-			lift(127);//abs(analogRead(potentiometer) - PID.LiftMax )* 3);//change by the difference between its curent position and the maximum (slower at the top, fast when not near the top)
-		}
-		if (D6 == 1){// && !MIN){
-			lift(-127);//-1 * abs(analogRead(potentiometer) - PID.LiftMin) * 0.5);	//change by the difference betwee the curent position and the bottom, slower at the bottom, while faster when not near the bottom
-		}
+		if(U6 == 1 && !MAX) lift(127);
+		if (D6 == 1 && !MIN) lift(-127);
 	}
 	else{
 		if(!PID.armGoalIsSet){
-			PID.requestedValue = PIDRequestType;
+			PID.requestedValue = PIDSensorType;
 			PID.armGoalIsSet = true;
 		}
 		PID.isRunning = true;
 	}
 	delay(10);
-}
+}//function fot the danny lift but with PID implementation {ignore for now}
+void DannyLift(){
+//basic lift control
+	if(U6 == 1 || D6 == 1){
+		if(U6 == 1 ) lift(127);
+		if (D6 == 1) lift(-127);
+	}
+	else lift(0);
+	delay(10);
+}//function for basic lift control via danny lift
+void chainBarLift(){
+	if(U5 == 1 || D5 == 1){
+		if(U5 == 1 ) motorSet(ChainBar, 127);//[ChainBar] = 127; }
+		if (D5 == 1) motorSet(ChainBar, -127);
+	}
+	else motorSlew[ChainBar] = 0;
+	delay(10);
+}//function for controlling the chain bar atop the danny lift (similar structure)
 void intake(){
-    if(U8 == 1){toggle = !toggle;}
-    if(toggle){
-        digitalWrite(3, HIGH);
-    }
-    else{//toggle is false
-        digitalWrite(3, LOW);
-    }
+    if(U8 == 1) toggle = !toggle;
+    if(toggle) digitalWrite(3, HIGH);
+    else digitalWrite(3, LOW);
     delay(200);
-}
+}//function for current intake (as of rn is pneumatic claw)
 void operatorControl(){//initializes everythin
 	initializeOpControl();
-	PID.requestedValue = PIDRequestType;
+	PID.requestedValue = PIDSensorType;
 	TaskHandle SlewRateMotorTask = taskCreate(MotorSlewRateTask, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
 	//startTask(updateNav);
 	TaskHandle PIDTask = taskCreate(pidController, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
 	taskResume(SlewRateMotorTask);
 	taskResume(PIDTask);
 	while(true){
-		if(L7 == 1){
-			PID.requestedValue = 2000;
-			PID.armGoalIsSet = true;
-			PID.isRunning = true;
-		}
-		if(R7 == 1){
-			PID.requestedValue = 3000;
-			PID.armGoalIsSet = true;
-			PID.isRunning = true;
-		}
 		debug();
 		drive();
-		intake();
+		//intake();
 		MobileGoal();
-		DannyLift();
-		delay(1);
+		DannyLiftPID();
+		chainBarLift();
+		delay(10);
 	}
-}
+}//function for operator control

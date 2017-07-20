@@ -113,8 +113,8 @@ enum {//motors
     useless = 1,//port1 (DONT EVER USE)
     RightBaseM = 2,//right base motors
     LeftBaseM = 3,//left base motors
-    RightLiftM = 4,//leftf chain motors
-    LeftLiftM = 5,//right chain motors
+    DannyLiftM = 4,//leftf chain motors
+    ChainBar = 5,//right chain motors
     MoGo = 6//mobile goal
 };
 //#define gyroscope 1
