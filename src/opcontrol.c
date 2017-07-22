@@ -99,9 +99,9 @@ void lift(float speed){
 	motorSlew[DannyLiftM] = speed;
 }//function for controlling the danny lift (1 motor y cabled one motor has to be reversed)
 void pidController(void * parameters){
-	float kP = 0.2;//remove later
-	float kI = 25;//remove later
-	float kD = 0.1;//remove later
+	float kP = 0.25;//remove later
+	float kI = 15;//remove later
+	float kD = 0.0;//remove later
     // If we are using an encoder then clear it
 	encoderReset(encoder1);
     PID.lastError = 0;
@@ -109,7 +109,7 @@ void pidController(void * parameters){
 	PID.error = 0;
 	PID.derivative = 0;
 	PID.currentPos = PIDSensorType;
-	PID.threshold = 30;//sets error threshold
+	PID.threshold = 20;//sets error threshold
     while(true){
 		if(PID.isRunning){
 			//initializePID
@@ -128,10 +128,10 @@ void pidController(void * parameters){
         	PID.derivative = PID.error - PID.lastError;
         	PID.lastError  = PID.error;
         	// calculate drive
-				int power = (kP * PID.error) + (PID.integral / kI) + (kD * PID.derivative) ;
-			if(abs(power) > 14){
+				int power = (kP * PID.error);// + (PID.integral / kI) + (kD * PID.derivative) ;
+			if(abs(power) > 15){
 				//NO SLEW RATE (DOSENT UPDATE AS FAST)
-				if(getSign(-power) == -1) motorSet(DannyLiftM, -power);
+				motorSet(DannyLiftM, power);
 			}
     		// Run at 50Hz
 		}
@@ -239,6 +239,7 @@ void intake(){
 }//function for current intake (as of rn is pneumatic claw)
 void operatorControl(){//initializes everythin
 	initializeOpControl();
+	PID.isRunning = false;
 	PID.requestedValue = PIDSensorType;
 	TaskHandle SlewRateMotorTask = taskCreate(MotorSlewRateTask, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
 	//startTask(updateNav);
