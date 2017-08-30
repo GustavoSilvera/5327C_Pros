@@ -143,7 +143,6 @@ void pidController(void * parameters){
 			PID.error = 0;
 			PID.derivative = 0;
 		}
-        delay(10);
     }
 }//task for a PID lift controller, not implemented well YET, ignore for now
 float TruSpeed(float value){
@@ -156,7 +155,6 @@ void drive(){
 	//noSLEW
 	motorSet(RightBaseM, -1*TruSpeed(joystickGetAnalog(1,2)));
 	motorSet(LeftBaseM, TruSpeed(joystickGetAnalog(1,3)));
-	delay(5);
 }//function for driving the robot
 /*void driveFor(float goal){
 	//printf("driveFor");
@@ -184,7 +182,7 @@ void updateNav(){//not working, use simulation to precisely measure
 		currentDIR += Mag;
 		encoderReset(encoder1);//resets the quad encoder to have a noticible change in encoder values, rather than always adding a large value
 	//	gyroReset(gyroscope);//resets the gyro to refresh with multiple small changes in rotation values
-		delay(25);//refresh every 25ms
+		//delay(25);//refresh every 25ms
 	}
 }//function for calculating the current position of the robot baed off basic vector algebra and trig
 void debug(){
@@ -199,7 +197,7 @@ void MobileGoal(){
 	if(U5 == 1)	motorSlew[MoGo] = 127;
 	else if (D5 == 1) motorSlew[MoGo] = -127;
 	else if (D5 == 0 && U8 == 0) motorSlew[MoGo] = 0;
-	delay(10);
+	//delay(10);
 }//function for controlling the position of the mobile goal intake
 void DannyLiftPID(){
 	bool MAX = (encoderGet(encoder1) >= 600);
@@ -218,7 +216,7 @@ void DannyLiftPID(){
 		}
 		PID.isRunning = true;
 	}
-	delay(10);
+	//delay(10);
 }//function fot the danny lift but with PID implementation {ignore for now}
 void DannyLift(){
 //basic lift control
@@ -227,7 +225,7 @@ void DannyLift(){
 		if (D6 == 1) lift(-127);
 	}
 	else lift(0);
-	delay(10);
+	//delay(10);
 }//function for basic lift control via danny lift
 void CBar(){
 //basic lift control
@@ -236,7 +234,7 @@ void CBar(){
 		if (D5 == 1) motorSlew[ChainBar] =-127;
 	}
 	else motorSet(ChainBar, 0);
-	delay(10);
+	//delay(10);
 }//function for basic lift control via danny lift
 void Mintake(){
 	if(U8 == 1 || D8 == 1){
@@ -244,7 +242,7 @@ void Mintake(){
 		if (D8 == 1) motorSlew[Claw] = -127;
 	}
 	else lift(0);
-	delay(10);
+	//delay(10);
 }
 void intake(){//for pneumatics
     if(U8 == 1) toggle = !toggle;
@@ -269,6 +267,6 @@ void operatorControl(){//initializes everythin
 		Mintake();
 		MobileGoal();
 		DannyLift();
-		delay(1);
+		delay(3);
 	}
 }//function for operator control
