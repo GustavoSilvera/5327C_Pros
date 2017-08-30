@@ -26,7 +26,7 @@ struct maintainPosition{
 };
 volatile struct maintainPosition PID;
 
-#define PI 3.1415926535898628
+#define PI 3.141592
 #define MOTOR_AMOUNT 6
 #define PIDSensorType encoderGet(encoder1)
 //analogRead(potentiometer)
@@ -68,11 +68,12 @@ void MotorSlewRateTask( void * parameters){//slew rate task
 	//	SlewAmount[motorI] = 20;//allow the initial slew change to be 15 (anything else and the motor basically wont move)
 	//}//USED FOR INITIALIZING EVERY MOTOR_AMOUNT
 	SlewAmount[useless] = 10;//useless motre anyways.
-	SlewAmount[RightBaseM] = 25;//lots o' speed
-	SlewAmount[LeftBaseM] = 25;//lots o' speed
-	SlewAmount[ChainBar] = 20;//speed
+	SlewAmount[RightBaseM] = 50;//lots o' speed
+	SlewAmount[LeftBaseM] = 50;//lots o' speed
 	SlewAmount[DannyLiftM] = 20;//want more speed
 	SlewAmount[MoGo] = 10;//higher torque
+	SlewAmount[ChainBar] = 20;
+	SlewAmount[Claw] = 10;
 	while(true){// run loop for every motor
 		for( motorI = 0; motorI <= MOTOR_AMOUNT; motorI++){
 			//motorCurrent = motor[ motorIndex ];
@@ -89,14 +90,15 @@ void MotorSlewRateTask( void * parameters){//slew rate task
 						motorSet(motorI, motorSlew[motorI]);//sets change to goal
 					}
 				}
-				//motorSet(motorI, motorGet(motorI));
+				motorSet(motorI, motorGet(motorI));
 			}
+			delay(15);//delay 15ms
 		}
-		delay(25);//delay 15ms
 	}
 }//task for "slew"-ing the motres by adding to their power via loops
 void lift(float speed){
-	motorSlew[DannyLiftM] = speed;
+	//motorSlew[DannyLiftM] = speed;
+	motorSet(DannyLiftM, speed);
 }//function for controlling the danny lift (1 motor y cabled one motor has to be reversed)
 void pidController(void * parameters){
 	float kP = 0.25;//remove later
@@ -151,7 +153,10 @@ float TruSpeed(float value){
 void drive(){
 	motorSlew[RightBaseM] = -1*TruSpeed(joystickGetAnalog(1,2));//y axis for baseRight joystick
 	motorSlew[LeftBaseM] = TruSpeed(joystickGetAnalog(1,3));//y acis for left  joystick
-	delay(10);
+	//noSLEW
+	motorSet(RightBaseM, -1*TruSpeed(joystickGetAnalog(1,2)));
+	motorSet(LeftBaseM, TruSpeed(joystickGetAnalog(1,3)));
+	delay(5);
 }//function for driving the robot
 /*void driveFor(float goal){
 	//printf("driveFor");
@@ -191,9 +196,10 @@ void debug(){
 	printf("\n");
 }//function for debugging sensor values and outputs to text terminal
 void MobileGoal(){
-	if(U8 == 1)	motorSlew[MoGo] = 127;
-	else if (D8 == 1) motorSlew[MoGo] = -127;
-	else if (D8 == 0 && U8 == 0) motorSlew[MoGo] = 0;
+	if(U5 == 1)	motorSlew[MoGo] = 127;
+	else if (D5 == 1) motorSlew[MoGo] = -127;
+	else if (D5 == 0 && U8 == 0) motorSlew[MoGo] = 0;
+	delay(10);
 }//function for controlling the position of the mobile goal intake
 void DannyLiftPID(){
 	bool MAX = (encoderGet(encoder1) >= 600);
@@ -223,20 +229,29 @@ void DannyLift(){
 	else lift(0);
 	delay(10);
 }//function for basic lift control via danny lift
-void chainBarLift(){
+void CBar(){
+//basic lift control
 	if(U5 == 1 || D5 == 1){
-		if(U5 == 1 ) motorSet(ChainBar, 127);//[ChainBar] = 127; }
-		if (D5 == 1) motorSet(ChainBar, -127);
+		if(U5 == 1 ) motorSlew[ChainBar] = 127;
+		if (D5 == 1) motorSlew[ChainBar] =-127;
 	}
-	else motorSlew[ChainBar] = 0;
+	else motorSet(ChainBar, 0);
 	delay(10);
-}//function for controlling the chain bar atop the danny lift (similar structure)
-void intake(){
+}//function for basic lift control via danny lift
+void Mintake(){
+	if(U8 == 1 || D8 == 1){
+		if(U8 == 1 ) motorSlew[Claw] = 127;
+		if (D8 == 1) motorSlew[Claw] = -127;
+	}
+	else lift(0);
+	delay(10);
+}
+void intake(){//for pneumatics
     if(U8 == 1) toggle = !toggle;
     if(toggle) digitalWrite(3, HIGH);
     else digitalWrite(3, LOW);
     delay(200);
-}//function for current intake (as of rn is pneumatic claw)
+}//function for current intake (for pneumatic claw)
 void operatorControl(){//initializes everythin
 	initializeOpControl();
 	PID.isRunning = false;
@@ -249,10 +264,11 @@ void operatorControl(){//initializes everythin
 	while(true){
 		debug();
 		drive();
+		CBar();
 		//intake();
+		Mintake();
 		MobileGoal();
-		DannyLiftPID();
-		chainBarLift();
-		delay(10);
+		DannyLift();
+		delay(1);
 	}
 }//function for operator control

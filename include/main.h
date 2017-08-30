@@ -114,8 +114,9 @@ enum {//motors
     RightBaseM = 2,//right base motors
     LeftBaseM = 3,//left base motors
     DannyLiftM = 4,//leftf chain motors
-    ChainBar = 5,//right chain motors
-    MoGo = 6//mobile goal
+    MoGo = 5,//mobile goal
+    ChainBar = 6,//chain bar
+    Claw = 7//claw control
 };
 //#define gyroscope 1
 extern Gyro gyroscope;
