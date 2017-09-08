@@ -24,9 +24,8 @@
 
 // This prevents multiple inclusion, which isn't bad for this file but is good practice
 #define MAIN_H_
-
 #include <API.h>
-
+#include "globals.h"
 // Allow usage of this file in C++ programs
 #ifdef __cplusplus
 extern "C" {
@@ -93,10 +92,8 @@ void initialize();
  *
  * This task should never exit; it should end with some kind of infinite loop, even if empty.
  */
-void operatorControl();
+ void operatorControl();
 
-#define SensorValue encoderGet
-//quad1 encoderInit (1,2,false)
 //joysticks: parameters are (1[idek], vexRT[channel #])
 
 #define JRightX	joystickGetAnalog(1,1)

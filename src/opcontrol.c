@@ -1,35 +1,9 @@
 #include "main.h"
 #include <math.h>
-#include "PORTS.h"
 
-//#define PID_SENSOR_SCALE    1
-
-#define PID_MOTOR_SCALE     -1
-#define PID_DRIVE_MAX       127
-#define PID_DRIVE_MIN     (-127)
-#define PID_INTEGRAL_LIMIT  50
-
-struct robot{
-	float Xpos;
-	float Ypos;
-	float deg;
-};
 struct robot current;
 
-struct maintainPosition{
-	bool isRunning, armGoalIsSet;
-	int threshold;
-	float error, integral, derivative, lastError;
-	int currentPos;
-	float requestedValue;
-	//, kI, kD;
-};
 volatile struct maintainPosition PID;
-
-#define PI 3.141592
-#define MOTOR_AMOUNT 6
-#define PIDSensorType encoderGet(encoder1)
-//analogRead(potentiometer)
 
 //const in c means only READ ONLY
 // Array for requested speed of motors
@@ -58,7 +32,7 @@ float avg(float val1, float val2){
 float getSign(float check){
 	if (check < 0) return -1;
 	else if (check > 0) return 1;
-	else return 0;
+	return 0;
 }//func for getting sign of a number
 void MotorSlewRateTask( void * parameters){//slew rate task
 	printf("slewRate");
