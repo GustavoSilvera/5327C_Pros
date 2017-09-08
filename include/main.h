@@ -124,8 +124,8 @@ extern Encoder encoder1;
 extern Encoder ripperEncoder;
 extern Ultrasonic Usonic;
 
-#define potentiometer 2
-#define potentiometer2 3
+#define MoGoPot 2
+#define CBarPot 3
 
 #define U6  	joystickGetDigital(1,6,JOY_UP)//6U
 #define D6	    joystickGetDigital(1,6,JOY_DOWN)//6D
@@ -135,7 +135,7 @@ extern Ultrasonic Usonic;
 #define U8  	joystickGetDigital(1,8,JOY_UP)//8U
 #define D8	    joystickGetDigital(1,8,JOY_DOWN)//8D
 #define L8    	joystickGetDigital(1,8,JOY_LEFT)//8L
-#define R8	    joystickGetDigital(1,8,JOY_Right)//8R
+#define R8	    joystickGetDigital(1,8,JOY_RIGHT)//8R
 
 #define U7  	joystickGetDigital(1,7,JOY_UP)//7U
 #define D7	    joystickGetDigital(1,7,JOY_DOWN)//7D

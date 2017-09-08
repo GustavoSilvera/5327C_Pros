@@ -150,10 +150,10 @@ float TruSpeed(float value){
 	return(getSign(value)*(value*value) /(127));
 }//function for calculating the truSpeed function based off a quadratic polynomial
 void drive(){
-	motorSlew[RightBaseM] = -1*TruSpeed(joystickGetAnalog(1,2));//y axis for baseRight joystick
-	motorSlew[LeftBaseM] = TruSpeed(joystickGetAnalog(1,3));//y acis for left  joystick
+	//motorSlew[RightBaseM] = TruSpeed(joystickGetAnalog(1,2));//y axis for baseRight joystick
+	//motorSlew[LeftBaseM] = TruSpeed(joystickGetAnalog(1,3));//y acis for left  joystick
 	//noSLEW
-	motorSet(RightBaseM, -1*TruSpeed(joystickGetAnalog(1,2)));
+	motorSet(RightBaseM, TruSpeed(joystickGetAnalog(1,2)));
 	motorSet(LeftBaseM, TruSpeed(joystickGetAnalog(1,3)));
 }//function for driving the robot
 /*void driveFor(float goal){
@@ -186,18 +186,30 @@ void updateNav(){//not working, use simulation to precisely measure
 	}
 }//function for calculating the current position of the robot baed off basic vector algebra and trig
 void debug(){
-	printf("%d", encoderGet(encoder1));
-	//printf("%f", analogRead(potentiometer));
+//	printf("%d", encoderGet(encoder1));
+	printf("%d", analogRead(CBarPot));
 	//printf("%d", ultrasonicGet(Usonic));
 	//printf("%d", gyroGet(gyroscope));
 	//printf("%d", D6);
 	printf("\n");
 }//function for debugging sensor values and outputs to text terminal
-void MobileGoal(){
-	if(U5 == 1)	motorSlew[MoGo] = 127;
-	else if (D5 == 1) motorSlew[MoGo] = -127;
-	else if (D5 == 0 && U8 == 0) motorSlew[MoGo] = 0;
-	//delay(10);
+void MobileGoal(){//real noice rn
+	float minExtend = 1650;
+	float highest = 2200;
+	float maxExtend = 3150;
+	if(analogRead(MoGoPot) <= minExtend && U5 == 1) {motorSet(MoGo, 0);return;}
+	else if(analogRead(MoGoPot) >= maxExtend && D5 == 1) {motorSet(MoGo, 0);return;}
+	else if(U5 == 1 && analogRead(MoGoPot) > minExtend )  {motorSlew[MoGo] = -127;return;}
+	else if (D5 == 1 && analogRead(MoGoPot) < maxExtend ) {motorSlew[MoGo] = 127;return;}//neg
+//	else if(D5 == 1 && U5 == 1){motorSlew[MoGo] = analogRead(MoGoPot) - highest;return;}
+	else {motorSet(MoGo, 0);}//motorSlew[MoGo] = 0; return;}
+}//function for controlling the position of the mobile goal intake
+void ClawIntake(){//real noice rn
+	if(U7 == 1 || D7 == 1){
+		if(U7 == 1 ) motorSet(Claw, 127);
+		if (D7 == 1) motorSet(Claw, -127);
+	}
+	else motorSet(Claw, 0);
 }//function for controlling the position of the mobile goal intake
 void DannyLiftPID(){
 	bool MAX = (encoderGet(encoder1) >= 600);
@@ -229,21 +241,13 @@ void DannyLift(){
 }//function for basic lift control via danny lift
 void CBar(){
 //basic lift control
-	if(U5 == 1 || D5 == 1){
-		if(U5 == 1 ) motorSlew[ChainBar] = 127;
-		if (D5 == 1) motorSlew[ChainBar] =-127;
+	if(U8 == 1 || D8 == 1){
+		if(U8 == 1) motorSet(ChainBar, 127);//motorSlew[ChainBar] = 127;
+		if(D8 == 1) motorSet(ChainBar, -127);//motorSlew[ChainBar] =-127;
 	}
 	else motorSet(ChainBar, 0);
 	//delay(10);
 }//function for basic lift control via danny lift
-void Mintake(){
-	if(U8 == 1 || D8 == 1){
-		if(U8 == 1 ) motorSlew[Claw] = 127;
-		if (D8 == 1) motorSlew[Claw] = -127;
-	}
-	else lift(0);
-	//delay(10);
-}
 void intake(){//for pneumatics
     if(U8 == 1) toggle = !toggle;
     if(toggle) digitalWrite(3, HIGH);
@@ -264,7 +268,7 @@ void operatorControl(){//initializes everythin
 		drive();
 		CBar();
 		//intake();
-		Mintake();
+		ClawIntake();
 		MobileGoal();
 		DannyLift();
 		delay(3);
