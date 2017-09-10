@@ -26,6 +26,7 @@
 #define MAIN_H_
 #include <API.h>
 #include "globals.h"
+#include "slewRate.h"
 // Allow usage of this file in C++ programs
 #ifdef __cplusplus
 extern "C" {
@@ -110,19 +111,20 @@ enum {//motors
     useless = 1,//port1 (DONT EVER USE)
     RightBaseM = 2,//right base motors
     LeftBaseM = 3,//left base motors
-    DannyLiftM = 4,//leftf chain motors
+    DannyLiftMR = 4,//lift right motors
     MoGo = 5,//mobile goal
     ChainBar = 6,//chain bar
-    Claw = 7//claw control
+    Claw = 7,//claw control
+    DannyLiftML = 8//lift left motor
 };
 //#define gyroscope 1
 extern Gyro gyroscope;
 extern Encoder encoder1;
-extern Encoder ripperEncoder;
 extern Ultrasonic Usonic;
 
 #define MoGoPot 2
 #define CBarPot 3
+#define DannyPot 4
 
 #define U6  	joystickGetDigital(1,6,JOY_UP)//6U
 #define D6	    joystickGetDigital(1,6,JOY_DOWN)//6D

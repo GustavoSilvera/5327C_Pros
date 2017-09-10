@@ -13,8 +13,7 @@ void initializeIO() {
 /*
  * Runs user initialization code. This function will be started in its own task with the default
  * priority and stack size once when the robot is starting up. It is possible that the VEXnet
- * communication link may not be fully established at this time, so reading from the VEX
- * Joystick may fail.
+ * communication lim l.
  *
  * This function should initialize most sensors (gyro, encoders, ultrasonics), LCDs, global
  * variables, and IMEs.
@@ -28,10 +27,8 @@ void initialize() {
 
     gyroscope = gyroInit(1, 0);//port 1 no multiplier
     encoder1 = encoderInit(1, 2, false);
-    ripperEncoder = encoderInit(3, 4, false);
-    Usonic = ultrasonicInit(11, 12);
+    Usonic = ultrasonicInit(3, 4);
     pinMode(6, OUTPUT);
 	encoderReset(encoder1);
-    encoderReset(ripperEncoder);
 	gyroReset(gyroscope);
 }

@@ -1,39 +1,22 @@
 #include "main.h"
 #include <math.h>
+#include "slewRate.c"
 
 struct robot current;
-
+float circum = 4*PI;
+float velocity;
 volatile struct maintainPosition PID;
 
 //const in c means only READ ONLY
 // Array for requested speed of motors
-int motorSlew[MOTOR_AMOUNT];//for each motor
-// Array to hold change values for each motor
-int SlewAmount[MOTOR_AMOUNT];//for each motor
 volatile bool toggle = false;
 
 Gyro gyroscope;
 Encoder encoder1;
-Encoder ripperEncoder;
 Ultrasonic Usonic;
-
-void initializeOpControl(){
-	PID.requestedValue = 200;
-	PID.isRunning = true;
-	gyroShutdown(gyroscope);//resets gyro sensor, rly sketchy
-	gyroscope = gyroInit(1,0);
-	current.Xpos = 0.0;
-	current.Ypos = 0.0;
-	current.deg = 0.0;
-}
-float avg(float val1, float val2){
-	return (val1 + val2 ) * 0.5;
-}//func for avg
-float getSign(float check){
-	if (check < 0) return -1;
-	else if (check > 0) return 1;
-	return 0;
-}//func for getting sign of a number
+int motorSlew[MOTOR_AMOUNT];//for each motor
+// Array to hold change values for each motor
+int SlewAmount[MOTOR_AMOUNT];//for each motor
 void MotorSlewRateTask( void * parameters){//slew rate task
 	printf("slewRate");
 	int motorI;//which motor are we talking about? INDEX
@@ -44,7 +27,8 @@ void MotorSlewRateTask( void * parameters){//slew rate task
 	SlewAmount[useless] = 10;//useless motre anyways.
 	SlewAmount[RightBaseM] = 50;//lots o' speed
 	SlewAmount[LeftBaseM] = 50;//lots o' speed
-	SlewAmount[DannyLiftM] = 20;//want more speed
+	SlewAmount[DannyLiftML] = 20;//want more speed
+	SlewAmount[DannyLiftMR] = 20;//want more speed
 	SlewAmount[MoGo] = 10;//higher torque
 	SlewAmount[ChainBar] = 20;
 	SlewAmount[Claw] = 10;
@@ -70,9 +54,39 @@ void MotorSlewRateTask( void * parameters){//slew rate task
 		}
 	}
 }//task for "slew"-ing the motres by adding to their power via loops
-void lift(float speed){
+void MeasureSpeed(void * parameters){
+	/*MEASURING IN IN/SEC*/
+	int encoderPast = 0;
+	float delayAmount = 50;
+	while(true){
+		velocity = ( (encoderGet(encoder1) - encoderPast) / circum) / (delayAmount/1000);//1000 ms in 1s
+		encoderPast = encoderGet(encoder1);
+		delay(delayAmount);
+	}
+}
+void initializeOpControl(){
+	PID.requestedValue = 200;
+	PID.isRunning = false;
+	encoderReset(encoder1);
+	gyroShutdown(gyroscope);//resets gyro sensor, rly sketchy
+	gyroscope = gyroInit(1,0);
+	current.Xpos = 0.0;
+	current.Ypos = 0.0;
+	current.deg = 0.0;
+	velocity = 0;
+}
+float avg(float val1, float val2){
+	return (val1 + val2 ) * 0.5;
+}//func for avg
+float getSign(float check){
+	if (check < 0) return -1;
+	else if (check > 0) return 1;
+	return 0;
+}//func for getting sign of a number
+void lift(int speed){
 	//motorSlew[DannyLiftM] = speed;
-	motorSet(DannyLiftM, speed);
+	motorSet(DannyLiftML, speed);
+	motorSet(DannyLiftMR, -speed);
 }//function for controlling the danny lift (1 motor y cabled one motor has to be reversed)
 void pidController(void * parameters){
 	float kP = 0.25;//remove later
@@ -107,7 +121,7 @@ void pidController(void * parameters){
 				int power = (kP * PID.error);// + (PID.integral / kI) + (kD * PID.derivative) ;
 			if(abs(power) > 15){
 				//NO SLEW RATE (DOSENT UPDATE AS FAST)
-				motorSet(DannyLiftM, power);
+				lift(power);
 			}
     		// Run at 50Hz
 		}
@@ -130,20 +144,22 @@ void drive(){
 	motorSet(RightBaseM, TruSpeed(joystickGetAnalog(1,2)));
 	motorSet(LeftBaseM, TruSpeed(joystickGetAnalog(1,3)));
 }//function for driving the robot
-/*void driveFor(float goal){
+void fwds(int speed){
+	motorSet(RightBaseM, speed);
+	motorSet(LeftBaseM, speed);
+}
+void driveFor(float goal){
 	//printf("driveFor");
-	volatile float distanceTrav = 0.0;//amount of distance travelled
-	while ( true ){
-		distanceTrav += ( SensorValue ( encoder1 ) * 4 * PI ) / ( 360 );
-		if(abs(distanceTrav/goal) < 0.9){
-			motorSlew[testM] = 127;//abs( goal - distanceTrav ) * 2;
-		}
-		else{
-			motorSlew[testM] = 0;
-		}
-		delay(15);
+	goal = goal * circum;
+	encoderReset(encoder1);
+	int thresh = 10;//10 ticks
+	while ( abs(goal - encoderGet(encoder1)) > thresh){
+	//	distanceTrav += ( SensorValue ( encoder1 ) * 4 * PI ) / ( 360 );
+		fwds((goal - encoderGet(encoder1) - velocity) *(10/(goal/circum)));//SO GOOD
+		//fwds(127 - velocity);
 	}
-}*/
+	return;
+}
 //ignore// function for driving the robot a little bit
 void updateNav(){//not working, use simulation to precisely measure
 	//printf("updateNav");
@@ -160,17 +176,17 @@ void updateNav(){//not working, use simulation to precisely measure
 	}
 }//function for calculating the current position of the robot baed off basic vector algebra and trig
 void debug(){
-//	printf("%d", encoderGet(encoder1));
-	printf("%d", analogRead(CBarPot));
+	//printf("%d", encoderGet(encoder1));
+	//printf("%d", analogRead(DannyPot));
 	//printf("%d", ultrasonicGet(Usonic));
 	//printf("%d", gyroGet(gyroscope));
-	//printf("%d", D6);
+	printf("%f", velocity);
 	printf("\n");
 }//function for debugging sensor values and outputs to text terminal
 void MobileGoal(){//real noice rn
-	float minExtend = 1650;
-	float highest = 2200;
-	float maxExtend = 3150;
+	float minExtend = 1650;//real min = 1300
+	//float highest = 2200;
+	float maxExtend = 3150;//real max = 3500
 	if(analogRead(MoGoPot) <= minExtend && U5 == 1) {motorSet(MoGo, 0);return;}
 	else if(analogRead(MoGoPot) >= maxExtend && D5 == 1) {motorSet(MoGo, 0);return;}
 	else if(U5 == 1 && analogRead(MoGoPot) > minExtend )  {motorSlew[MoGo] = -127;return;}
@@ -215,12 +231,16 @@ void DannyLift(){
 }//function for basic lift control via danny lift
 void CBar(){
 //basic lift control
-	if(U8 == 1 || D8 == 1){
-		if(U8 == 1) motorSet(ChainBar, 127);//motorSlew[ChainBar] = 127;
-		if(D8 == 1) motorSet(ChainBar, -127);//motorSlew[ChainBar] =-127;
-	}
-	else motorSet(ChainBar, 0);
-	//delay(10);
+//delay(10);
+	float minExtend = 500;
+	float maxExtend = 2500;
+	if(analogRead(CBarPot) <= minExtend && U8 == 1) {motorSet(ChainBar, 0);return;}
+	else if(analogRead(CBarPot) >= maxExtend && D8 == 1) {motorSet(ChainBar, 0);return;}
+	else if(U8 == 1 && analogRead(CBarPot) > minExtend )  {motorSet(ChainBar, 127);return;}//motorSlew[ChainBar] = -127;return;}
+	else if (D8 == 1 && analogRead(CBarPot) < maxExtend ) {motorSet(ChainBar, -127);return;}//motorSlew[ChainBar] = 127;return;}//neg
+//	else if(D5 == 1 && U5 == 1){motorSlew[MoGo] = analogRead(MoGoPot) - highest;return;}
+	else {motorSet(ChainBar, 0);}//motorSlew[MoGo] = 0; return;}
+
 }//function for basic lift control via danny lift
 void intake(){//for pneumatics
     if(U8 == 1) toggle = !toggle;
@@ -232,16 +252,22 @@ void operatorControl(){//initializes everythin
 	initializeOpControl();
 	PID.isRunning = false;
 	PID.requestedValue = PIDSensorType;
-	TaskHandle SlewRateMotorTask = taskCreate(MotorSlewRateTask, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
 	//startTask(updateNav);
+
 	TaskHandle PIDTask = taskCreate(pidController, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
+	TaskHandle SlewRateMotorTask = taskCreate(MotorSlewRateTask, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
+	TaskHandle Speedometer = taskCreate(MeasureSpeed, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
+
+	taskResume(Speedometer);
 	taskResume(SlewRateMotorTask);
 	taskResume(PIDTask);
 	while(true){
-		debug();
+		//debug();
 		drive();
 		CBar();
 		//intake();
+		if(R8 == 1) driveFor(35);
+		if(R7 == 1) driveFor(50);
 		ClawIntake();
 		MobileGoal();
 		DannyLift();
