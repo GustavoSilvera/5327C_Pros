@@ -5,7 +5,7 @@
 struct robot current;
 float circum = 4*PI;
 float velocity;
-volatile struct maintainPosition PID;
+//volatile struct maintainPosition PID;
 
 //const in c means only READ ONLY
 // Array for requested speed of motors
@@ -15,7 +15,6 @@ Gyro gyroscope;
 Encoder encoder1;
 Ultrasonic Usonic;
 int motorSlew[MOTOR_AMOUNT];//for each motor
-// Array to hold change values for each motor
 int SlewAmount[MOTOR_AMOUNT];//for each motor
 void MotorSlewRateTask( void * parameters){//slew rate task
 	printf("slewRate");
@@ -35,22 +34,22 @@ void MotorSlewRateTask( void * parameters){//slew rate task
 	while(true){// run loop for every motor
 		for( motorI = 0; motorI <= MOTOR_AMOUNT; motorI++){
 			//motorCurrent = motor[ motorIndex ];
-			if( motorGet(motorI) != motorSlew[motorI] ){//current motor value not equal to goal
-				if( motorGet(motorI) < motorSlew[motorI]){//if less than goal
-					motorSet(motorI, motorGet(motorI)+SlewAmount[motorI]);//decrease by specific amount
+			if( abs(motorGet(motorI) - motorSlew[motorI]) > 10){//current motor value not equal to goal
+				if( motorGet(motorI) < motorSlew[motorI] && motorGet(motorI) < 127){//if less than goal || less than max
+					motorSet(motorI, motorGet(motorI) + SlewAmount[motorI]);//decrease by specific amount
 					if( motorGet(motorI) >= motorSlew[motorI]){//if equal to or surpassed goal
 						motorSet(motorI, motorSlew[motorI]);//sets change to goal
 					}
 				}
-				if( motorGet(motorI) > motorSlew[motorI]){//if currently more than requested
-					motorSet(motorI, motorGet(motorI)-SlewAmount[motorI]);//decrease by specific amount
+				if( motorGet(motorI) > motorSlew[motorI] && motorGet(motorI) > -127){//if currently more than requested
+					motorSet(motorI, motorGet(motorI) - SlewAmount[motorI]);//decrease by specific amount
 					if(motorGet(motorI) <= motorSlew[motorI]){//once reaches or passes goal
 						motorSet(motorI, motorSlew[motorI]);//sets change to goal
 					}
 				}
 				motorSet(motorI, motorGet(motorI));
 			}
-			delay(15);//delay 15ms
+			delay(25);//delay 25ms
 		}
 	}
 }//task for "slew"-ing the motres by adding to their power via loops
@@ -63,10 +62,10 @@ void MeasureSpeed(void * parameters){
 		encoderPast = encoderGet(encoder1);
 		delay(delayAmount);
 	}
-}
+}//task for measuring velocity of the base, in IN/Sec
 void initializeOpControl(){
-	PID.requestedValue = 200;
-	PID.isRunning = false;
+	//PID.requestedValue = 200;
+	//PID.isRunning = false;
 	encoderReset(encoder1);
 	gyroShutdown(gyroscope);//resets gyro sensor, rly sketchy
 	gyroscope = gyroInit(1,0);
@@ -89,11 +88,11 @@ void lift(int speed){
 	motorSet(DannyLiftMR, -speed);
 }//function for controlling the danny lift (1 motor y cabled one motor has to be reversed)
 void pidController(void * parameters){
-	float kP = 0.25;//remove later
+/*	float kP = 0.25;//remove later
 	float kI = 15;//remove later
 	float kD = 0.0;//remove later
     // If we are using an encoder then clear it
-	encoderReset(encoder1);
+	//encoderReset(encoder1);
     PID.lastError = 0;
     PID.integral = 0;
 	PID.error = 0;
@@ -131,8 +130,27 @@ void pidController(void * parameters){
 			PID.error = 0;
 			PID.derivative = 0;
 		}
-    }
+    }*/
 }//task for a PID lift controller, not implemented well YET, ignore for now
+void PID(char sensor, int goal, int motor, int thresh, float kP, bool slew, bool reversed){
+	int error;
+	int minSpeed = 30;
+	int dir = 1;
+	if(reversed) dir = -1;
+	do {
+		error = (analogRead(sensor) - goal);
+		if(abs(error) > minSpeed){
+			if(!slew) motorSet(motor, kP * (dir * error));
+			else motorSlew[motor] = kP * (dir * error);//slewing PID
+		}
+		else {
+			if(!slew) motorSet(motor, dir * minSpeed);
+			else motorSlew[motor] = (dir * minSpeed);//slewing PID
+		}
+		delay(5);
+	} while(abs(error) > thresh);
+	return;
+}
 float TruSpeed(float value){
 	//for all other polynomials; visit: goo.gl/mhvbx4
 	return(getSign(value)*(value*value) /(127));
@@ -149,21 +167,21 @@ void fwds(int speed){
 	motorSet(LeftBaseM, speed);
 }
 void driveFor(float goal){
-	//printf("driveFor");
-	goal = goal * circum;
 	encoderReset(encoder1);
 	int thresh = 10;//10 ticks
-	while ( abs(goal - encoderGet(encoder1)) > thresh){
-	//	distanceTrav += ( SensorValue ( encoder1 ) * 4 * PI ) / ( 360 );
-		fwds((goal - encoderGet(encoder1) - velocity) *(10/(goal/circum)));//SO GOOD
-		//fwds(127 - velocity);
+	int StartTime = millis();
+	while ( abs(goal*circum - encoderGet(encoder1)) > thresh){
+		if(millis() - StartTime < abs(goal) * 1000){
+			fwds((goal*circum - encoderGet(encoder1) - velocity) *(10/(goal)));//SO GOOD
+		}
+		else return;//do something fancy for checking stalls
 	}
 	return;
 }
 //ignore// function for driving the robot a little bit
 void updateNav(){//not working, use simulation to precisely measure
 	//printf("updateNav");
-	float currentDIR = 0;
+	/*float currentDIR = 0;
 	while(true){
 		float Mag = (SensorValue(encoder1) * 4 *PI)/(360);//function for adding the change in inches to current posiiton
 		current.Xpos += cos(current.deg)*(180/PI)*Mag;//cosine of angle times magnitude RADIANS(vector trig)
@@ -173,27 +191,34 @@ void updateNav(){//not working, use simulation to precisely measure
 		encoderReset(encoder1);//resets the quad encoder to have a noticible change in encoder values, rather than always adding a large value
 	//	gyroReset(gyroscope);//resets the gyro to refresh with multiple small changes in rotation values
 		//delay(25);//refresh every 25ms
-	}
+	}*/
 }//function for calculating the current position of the robot baed off basic vector algebra and trig
 void debug(){
 	//printf("%d", encoderGet(encoder1));
-	//printf("%d", analogRead(DannyPot));
+	printf("%d", analogRead(CBarPot));
 	//printf("%d", ultrasonicGet(Usonic));
 	//printf("%d", gyroGet(gyroscope));
-	printf("%f", velocity);
+	//printf("%f", velocity);
 	printf("\n");
 }//function for debugging sensor values and outputs to text terminal
-void MobileGoal(){//real noice rn
-	float minExtend = 1650;//real min = 1300
-	//float highest = 2200;
-	float maxExtend = 3150;//real max = 3500
-	if(analogRead(MoGoPot) <= minExtend && U5 == 1) {motorSet(MoGo, 0);return;}
-	else if(analogRead(MoGoPot) >= maxExtend && D5 == 1) {motorSet(MoGo, 0);return;}
-	else if(U5 == 1 && analogRead(MoGoPot) > minExtend )  {motorSlew[MoGo] = -127;return;}
-	else if (D5 == 1 && analogRead(MoGoPot) < maxExtend ) {motorSlew[MoGo] = 127;return;}//neg
-//	else if(D5 == 1 && U5 == 1){motorSlew[MoGo] = analogRead(MoGoPot) - highest;return;}
-	else {motorSet(MoGo, 0);}//motorSlew[MoGo] = 0; return;}
+void manualLiftControl(int min, int max, int sensorRead, int motor, int buttonUp, int buttonDown, bool reversed, bool slew){
+	int dir = 1;
+	if(reversed) dir = -1;
+	if(sensorRead <= min && buttonUp == 1) 					{motorSet(motor, 0);return;}
+	else if(sensorRead >= max && buttonDown == 1) 			{motorSet(motor, 0);return;}
+	else if(buttonUp == 1 && sensorRead > min && slew)  	{motorSlew[motor] = dir * 127;}
+	else if(buttonUp == 1 && sensorRead > min && !slew) 	{motorSet(motor, dir * 127);}
+	else if (buttonDown == 1 && sensorRead < max && slew) 	{motorSlew[motor] = -dir * 127;}
+	else if (buttonDown == 1 && sensorRead < max && !slew) 	{motorSet(motor, -dir * 127);}
+	else if(!slew) 											{motorSet(motor, 0); return;}
+	else /*yes slew*/										{motorSlew[motor] = 0; return;}
+
+}
+void MobileGoal(bool manual){//real noice rn
+	if(manual) manualLiftControl(1450, 3250, analogRead(MoGoPot), MoGo, U5, D5, true, true);
+	else return;
 }//function for controlling the position of the mobile goal intake
+
 void ClawIntake(){//real noice rn
 	if(U7 == 1 || D7 == 1){
 		if(U7 == 1 ) motorSet(Claw, 127);
@@ -202,7 +227,7 @@ void ClawIntake(){//real noice rn
 	else motorSet(Claw, 0);
 }//function for controlling the position of the mobile goal intake
 void DannyLiftPID(){
-	bool MAX = (encoderGet(encoder1) >= 600);
+	/*bool MAX = (encoderGet(encoder1) >= 600);
 	bool MIN = (encoderGet(encoder1) <= 10);
 	///POTENTIOMETER: analogRead(potentiometer)
 	if(U6 == 1 || D6 == 1){
@@ -217,7 +242,7 @@ void DannyLiftPID(){
 			PID.armGoalIsSet = true;
 		}
 		PID.isRunning = true;
-	}
+	}*/
 	//delay(10);
 }//function fot the danny lift but with PID implementation {ignore for now}
 void DannyLift(){
@@ -229,19 +254,13 @@ void DannyLift(){
 	else lift(0);
 	//delay(10);
 }//function for basic lift control via danny lift
-void CBar(){
-//basic lift control
-//delay(10);
-	float minExtend = 500;
-	float maxExtend = 2500;
-	if(analogRead(CBarPot) <= minExtend && U8 == 1) {motorSet(ChainBar, 0);return;}
-	else if(analogRead(CBarPot) >= maxExtend && D8 == 1) {motorSet(ChainBar, 0);return;}
-	else if(U8 == 1 && analogRead(CBarPot) > minExtend )  {motorSet(ChainBar, 127);return;}//motorSlew[ChainBar] = -127;return;}
-	else if (D8 == 1 && analogRead(CBarPot) < maxExtend ) {motorSet(ChainBar, -127);return;}//motorSlew[ChainBar] = 127;return;}//neg
-//	else if(D5 == 1 && U5 == 1){motorSlew[MoGo] = analogRead(MoGoPot) - highest;return;}
-	else {motorSet(ChainBar, 0);}//motorSlew[MoGo] = 0; return;}
-
-}//function for basic lift control via danny lift
+void CBar(bool manual){
+	if(manual) manualLiftControl(500, 2500, analogRead(CBarPot), ChainBar, U8, D8, false, false);
+	else {
+		PID(CBarPot, 2200, ChainBar, 30, 0.075, false, false);//need to insert WHICH sensor to read, not the value (cuz loop == constant)
+		if(U8 == 1 || D8 == 1) {manual = true;}
+	}
+}//function for basic lift control via chain bar
 void intake(){//for pneumatics
     if(U8 == 1) toggle = !toggle;
     if(toggle) digitalWrite(3, HIGH);
@@ -250,8 +269,8 @@ void intake(){//for pneumatics
 }//function for current intake (for pneumatic claw)
 void operatorControl(){//initializes everythin
 	initializeOpControl();
-	PID.isRunning = false;
-	PID.requestedValue = PIDSensorType;
+	//PID.isRunning = false;
+	//PID.requestedValue = PIDSensorType;
 	//startTask(updateNav);
 
 	TaskHandle PIDTask = taskCreate(pidController, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
@@ -260,16 +279,16 @@ void operatorControl(){//initializes everythin
 
 	taskResume(Speedometer);
 	taskResume(SlewRateMotorTask);
-	taskResume(PIDTask);
+//	taskResume(PIDTask);
 	while(true){
-		//debug();
+		debug();
 		drive();
-		CBar();
+		if(R8 == 1) CBar(false);
 		//intake();
-		if(R8 == 1) driveFor(35);
-		if(R7 == 1) driveFor(50);
+	//	if(R8 == 1) driveFor(35);
+		//if(R7 == 1) driveFor(40);//max can precicely drive is 50
 		ClawIntake();
-		MobileGoal();
+		MobileGoal(true);
 		DannyLift();
 		delay(3);
 	}

@@ -126,20 +126,22 @@ extern Ultrasonic Usonic;
 #define CBarPot 3
 #define DannyPot 4
 
-#define U6  	joystickGetDigital(1,6,JOY_UP)//6U
-#define D6	    joystickGetDigital(1,6,JOY_DOWN)//6D
 #define U5    	joystickGetDigital(1,5,JOY_UP)//5U
 #define D5	    joystickGetDigital(1,5,JOY_DOWN)//5D
+
+#define U6  	joystickGetDigital(1,6,JOY_UP)//6U
+#define D6	    joystickGetDigital(1,6,JOY_DOWN)//6D
+
+#define U7  	joystickGetDigital(1,7,JOY_UP)//7U
+#define D7	    joystickGetDigital(1,7,JOY_DOWN)//7D
+#define L7    	joystickGetDigital(1,7,JOY_LEFT)//7L
+#define R7	    joystickGetDigital(1,7,JOY_RIGHT)//7R
 
 #define U8  	joystickGetDigital(1,8,JOY_UP)//8U
 #define D8	    joystickGetDigital(1,8,JOY_DOWN)//8D
 #define L8    	joystickGetDigital(1,8,JOY_LEFT)//8L
 #define R8	    joystickGetDigital(1,8,JOY_RIGHT)//8R
 
-#define U7  	joystickGetDigital(1,7,JOY_UP)//7U
-#define D7	    joystickGetDigital(1,7,JOY_DOWN)//7D
-#define L7    	joystickGetDigital(1,7,JOY_LEFT)//7L
-#define R7	    joystickGetDigital(1,7,JOY_RIGHT)//7R
 
 // End C++ export structure
 #ifdef __cplusplus
