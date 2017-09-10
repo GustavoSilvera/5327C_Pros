@@ -27,6 +27,10 @@
 #include <API.h>
 #include "globals.h"
 #include "slewRate.h"
+#include "PID.h"
+#include "base.h"
+#include "measure.h"
+#include "lift.h"
 // Allow usage of this file in C++ programs
 #ifdef __cplusplus
 extern "C" {
