@@ -5,6 +5,8 @@
 float TruSpeed(float value);
 void drive();
 void fwds(int speed);
+void rot(int speed);
+void rotFor(int goal);
 void driveFor(float goal);
 void updateNav();
 

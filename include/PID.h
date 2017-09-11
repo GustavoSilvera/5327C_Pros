@@ -6,9 +6,9 @@
 struct PIDPar{
 	char sensor;
 	volatile int *goal;//changing asynchronously
-	int motor, thresh;
+	int motor1, motor2, thresh;
 	float kP;
-	bool slew, reversed;
+	bool slew, reversed, Mopposite;
 	volatile bool isRunning;
 };
 

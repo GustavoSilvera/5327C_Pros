@@ -3,26 +3,47 @@
 void pidController(void * parameters){
 	struct PIDPar * tP = (struct PIDPar*) parameters;//creates pointer to tP (task parameters)
 	int error;
-	int minSpeed = 30;
+	int minSpeed = 40;
 	int dir = 1;
 	if(tP->reversed) dir = -1;
+	int moppo;
+	if(tP->Mopposite) moppo = -1;
 	for(;;){//while true
         if(tP->isRunning){
         	error = (analogRead(tP->sensor) - *tP->goal);
         	if(abs(error) > minSpeed){
-        		if(!tP->slew) motorSet(tP->motor, tP->kP * (dir * error));
-        		else motorSlew[tP->motor] = tP->kP * (dir * error);//slewing PID
+				float power = tP->kP * (dir * error);
+        		if(!tP->slew) {
+					motorSet(tP->motor1, power);
+					motorSet(tP->motor2, moppo * power);
+				}
+        		else{
+					 motorSlew[tP->motor1] = power;//slewing PID
+					 motorSlew[tP->motor2] = moppo * power;//slewing PID
+				 }
         	}
-        	else if(abs(motorGet(tP->motor)) > 18){//lowest motor power until squeals
-                if(!tP->slew) motorSet(tP->motor, dir * minSpeed);
-        		else motorSlew[tP->motor] = (dir * minSpeed);//slewing PID
+        	else if(abs(motorGet(tP->motor1)) > 18){//lowest motor power until squeals
+                float power = dir * minSpeed;
+				if(!tP->slew) {
+					motorSet(tP->motor1, power);
+					motorSet(tP->motor2, moppo * power);
+				}
+        		else{
+					 motorSlew[tP->motor1] = power;//slewing PID
+					 motorSlew[tP->motor2] = moppo * power;//slewing PID
+				 }
         	}
             else {//turn off motors
-                if(!tP->slew) motorSet(tP->motor,0);
-        		else motorSlew[tP->motor] = (0);//slewing PID
+				if(!tP->slew) {
+					motorSet(tP->motor1, 0);
+					motorSet(tP->motor2, 0);
+				}
+        		else{
+					 motorSlew[tP->motor1] = 0;//slewing PID
+					 motorSlew[tP->motor2] = 0;//slewing PID
+				 }
             }
         	delay(5);
         }
 	}
-	return;
 }

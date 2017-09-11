@@ -9,10 +9,14 @@
 #define PI 3.1415
 #define MOTOR_AMOUNT 8
 #define PIDSensorType encoderGet(encoder1)//analogRead(potentiometer)
+#define CW 1
+#define CCW -1
+
 
 extern float circum;
 extern float velocity;
 extern int goalChainBar;
+extern int goalDanny;
 
 float avg(float val1, float val2);
 float getSign(float check);

@@ -30,6 +30,18 @@ void driveFor(float goal){
 	}
 	return;
 }
+void rot(int speed){
+	motorSet(RightBaseM, -speed);
+	motorSet(LeftBaseM,   speed);
+}
+void rotFor(int goal){//very simple, minimal rotation function
+	gyroReset(gyroscope);
+	int thresh = 2;//4 degrees
+	while ( abs(gyroGet(gyroscope) - goal) > thresh){
+		rot(gyroGet(gyroscope) - goal);
+	}
+	return;
+}
 //ignore// function for driving the robot a little bit
 
 void updateNav(){//not working, use simulation to precisely measure
