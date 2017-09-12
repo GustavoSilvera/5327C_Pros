@@ -35,33 +35,31 @@ void debug(){
 
 
 void grabStack(struct PIDPar* CBar, struct PIDPar* DannyPID){//mini auton
-	if(D7 == 1){
-		while(true){
-			CBar->isRunning = true;
-			DannyPID->isRunning = true;
-			goalDanny = 950;
-			goalChainBar = 200;
-			toggle = false;
-			if(analogRead(DannyPot) < 1200 && analogRead(CBarPot) < 300){
-				delay(70);
-				toggle = true;
-				delay(300);
-				break;
-			}
+	while(true){
+		CBar->isRunning = true;
+		DannyPID->isRunning = true;
+		goalDanny = 950;
+		goalChainBar = 200;
+		toggle = false;
+		if(analogRead(DannyPot) < 1200 && analogRead(CBarPot) < 300){
+			delay(70);
+			toggle = true;
+			delay(300);
+			break;
 		}
-		while(true){
-			CBar->isRunning = true;
-			DannyPID->isRunning = true;
-			goalDanny = 1200;
-			goalChainBar = 3800;
-			if(analogRead(CBarPot) > 3500){
-				delay(300);
-				toggle = false;
-				break;
-			}
-		}
-		return;
 	}
+	while(true){
+		CBar->isRunning = true;
+		DannyPID->isRunning = true;
+		goalDanny = 1200;
+		goalChainBar = 3800;
+		if(analogRead(CBarPot) > 3500){
+			delay(300);
+			toggle = false;
+			break;
+		}
+	}
+	return;
 }
 void claw(){
 	for(;;){
@@ -115,8 +113,8 @@ void operatorControl(){//initializes everythin
 		ChainBarCtrl(false, CBarPID);
 		DannyLift(false, DannyPID);
 		MobileGoal(true);
-		grabStack(CBarPID, DannyPID);
-		if(L8 == 1){ toggle = !toggle; delay(250);}
+		if(D7 == 1){ grabStack(CBarPID, DannyPID); }
+		if(L8 == 1){ toggle = !toggle; delay(250);}//claw control
 		//intake();
 		if(R7 == 1) rotFor(90);//driveFor(20);//max can precicely drive is 50
 		if(L7 == 1) rotFor(-90);
