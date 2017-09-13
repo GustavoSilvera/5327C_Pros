@@ -129,6 +129,9 @@ extern Ultrasonic Usonic;
 #define MoGoPot 2
 #define CBarPot 3
 #define DannyPot 4
+#define button 8//digital button port
+
+
 
 #define U5    	joystickGetDigital(1,5,JOY_UP)//5U
 #define D5	    joystickGetDigital(1,5,JOY_DOWN)//5D

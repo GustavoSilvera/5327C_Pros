@@ -22,11 +22,12 @@ void driveFor(float goal){
 	encoderReset(encoder1);
 	int thresh = 10;//10 ticks
 	int StartTime = millis();
+	float dP = 2;//multiplier for velocity controller
 	while ( abs(goal*circum - encoderGet(encoder1)) > thresh){
 		if(millis() - StartTime < abs(goal) * 1000){
-			fwds((goal*circum - encoderGet(encoder1) - velocity) *(10/(goal)));//SO GOOD
+			fwds(dP * ( ( goal*circum - encoderGet(encoder1) - velocity ) * (10/goal) ) );//SO GOOD
 		}
-		else return;//do something fancy for checking stalls
+		else break;//do something fancy for checking stalls
 	}
 	return;
 }

@@ -37,7 +37,7 @@ void DannyLift(bool manual, struct PIDPar* DannyPID){
 void ChainBarCtrl(bool manual, struct PIDPar* CBar){
 	if(U8 == 1 || D8 == 1) {
         CBar->isRunning = false;
-        manualLiftControl(500, 2500, analogRead(CBarPot), ChainBar, 0, U8, D8, false, false, false, true);
+        manualLiftControl(350, 3500, analogRead(CBarPot), ChainBar, 0, U8, D8, false, false, false, true);
     }
 	else {
         if(!CBar->isRunning){
