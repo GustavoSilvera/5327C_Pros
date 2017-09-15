@@ -139,21 +139,9 @@ void operatorControl(){//initializes everythin
 	while(true){
 		debug();
 		drive(false);
-		ChainBarCtrl(CBarPID);
-		DannyLift(DannyPID);
-		MobileGoal(MoGoPID);
-		//optimizing tasks
-			if(U7 == 1 || D7 == 1) taskSuspend(MoGoPIDTask);//kill Mobile goal task
-			else taskResume(MoGoPIDTask);
-			if(U6 == 1 || D6 == 1) taskSuspend(DannyPIDTask);//kill Danny lift task
-			else taskResume(DannyPIDTask);
-			if(U5 == 1 || D5 == 1) taskSuspend(CBarPIDTask);//kill chain bar task
-			else taskResume(CBarPIDTask);
-			//if(U6 == 1 || D6 == 1) taskSuspend(SlewRateMotorTask);
-			//else taskResume(SlewRateMotorTask);
-
-
-
+		ChainBarCtrl(CBarPID, CBarPIDTask, SlewRateMotorTask);
+		DannyLift(DannyPID, DannyPIDTask);
+		MobileGoal(MoGoPID, MoGoPIDTask);
 		if(D7 == 1 || D72 == 1){ grabStack(CBarPID, DannyPID); }
 		if(L8 == 1 || L82 == 1 ){ toggle = !toggle; delay(250);}//claw control
 		if(U8 == 1 || D8 == 1) MoGoToggle = !MoGoToggle;

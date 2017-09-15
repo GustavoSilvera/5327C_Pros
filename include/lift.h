@@ -14,7 +14,7 @@ void manualLiftControl(
     int buttonUp, int buttonDown,
     bool reversed, bool slew, bool Mopposite, bool usingPID
 );
-void MobileGoal( struct PIDPar* MoGoPID);
-void ChainBarCtrl(struct PIDPar* CBar);
-void DannyLift( struct PIDPar* DannyPID);
+void MobileGoal( struct PIDPar* MoGoPID, TaskHandle PIDTask);
+void DannyLift( struct PIDPar* DannyPID, TaskHandle PIDTask);
+void ChainBarCtrl(struct PIDPar* CBar, TaskHandle PIDTask, TaskHandle SlewTask);
 #endif
