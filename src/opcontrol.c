@@ -46,7 +46,7 @@ void grabStack(struct PIDPar* CBar, struct PIDPar* DannyPID){//mini auton
 		goalDanny = 950;
 		goalChainBar = 200;
 		toggle = false;
-		if(analogRead(DannyPot) < 1200 && analogRead(CBarPot) < 300){
+		if(abs(analogRead(DannyPot) - goalDanny) > 200 && abs(analogRead(CBarPot) - goalChainBar) > 150){
 			delay(70);
 			toggle = true;
 			delay(300);
@@ -69,13 +69,14 @@ void grabStack(struct PIDPar* CBar, struct PIDPar* DannyPID){//mini auton
 }
 void claw(){
 	int currentTime = 0;
+	int outTime = 0.5;//seconds of bringing claw outwards
 	for(;;){
 		if(toggle)	{
 			if(digitalRead(button) == HIGH)	motorSet(Claw, 127);//if pressed
 			currentTime = millis();
 		}
 		else {
-			if(millis() - currentTime < 500) motorSet(Claw, -127);
+			if(millis() - currentTime < outTime * 1000) motorSet(Claw, -127);
 			else motorSet(Claw, 0);
 		}
 
@@ -141,6 +142,18 @@ void operatorControl(){//initializes everythin
 		ChainBarCtrl(CBarPID);
 		DannyLift(DannyPID);
 		MobileGoal(MoGoPID);
+		//optimizing tasks
+			if(U7 == 1 || D7 == 1) taskSuspend(MoGoPIDTask);//kill Mobile goal task
+			else taskResume(MoGoPIDTask);
+			if(U6 == 1 || D6 == 1) taskSuspend(DannyPIDTask);//kill Danny lift task
+			else taskResume(DannyPIDTask);
+			if(U5 == 1 || D5 == 1) taskSuspend(CBarPIDTask);//kill chain bar task
+			else taskResume(CBarPIDTask);
+			//if(U6 == 1 || D6 == 1) taskSuspend(SlewRateMotorTask);
+			//else taskResume(SlewRateMotorTask);
+
+
+
 		if(D7 == 1 || D72 == 1){ grabStack(CBarPID, DannyPID); }
 		if(L8 == 1 || L82 == 1 ){ toggle = !toggle; delay(250);}//claw control
 		if(U8 == 1 || D8 == 1) MoGoToggle = !MoGoToggle;

@@ -1,5 +1,16 @@
 #include "main.h"
 
+
+int CBarMAX = 4000;
+int CBarMIN = 100;
+int DannyMAX = 2800;
+int DannyMIN = 600;
+int MoGoMAX = 2200;
+int MoGoMIN = 800;
+
+
+
+
 float circum = 4 * PI;
 float velocity;
 float avg(float val1, float val2){

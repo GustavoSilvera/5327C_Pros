@@ -19,7 +19,7 @@ void manualLiftControl(int min, int max, int sensorRead, int motor1, int motor2,
 void MobileGoal(struct PIDPar* MoGoPID){//real noice rn
 	if(U7 == 1 || D7 == 1){
         MoGoPID->isRunning = false;
-        manualLiftControl(1000, 2000, analogRead(MoGoPot), MoGo, 0, U7, D7, true, false, false, true);
+        manualLiftControl(MoGoMIN + 200, MoGoMAX - 200, analogRead(MoGoPot), MoGo, 0, U7, D7, true, false, false, true);
     }
 	else{
         /*if(!MoGoPID->isRunning){
@@ -27,10 +27,10 @@ void MobileGoal(struct PIDPar* MoGoPID){//real noice rn
         }*/
         MoGoPID->isRunning = true;
         if(MoGoToggle == true){
-            goalMoGo = 2100;
+            goalMoGo = MoGoMAX;
         }
         else{
-            goalMoGo = 1100;
+            goalMoGo = MoGoMIN;
         }
         delay(300);
     };//fancy pid
@@ -39,7 +39,7 @@ void DannyLift(struct PIDPar* DannyPID){
 //basic lift control
 	if(U6 == 1 || D6 == 1){
         DannyPID->isRunning = false;
-        manualLiftControl(650, 2800, analogRead(DannyPot), DannyLiftMR, DannyLiftML, U6, D6, true, false, true, true);
+        manualLiftControl(DannyMIN + 100, DannyMAX - 100, analogRead(DannyPot), DannyLiftMR, DannyLiftML, U6, D6, true, false, true, true);
 	}
 	else {
         if(!DannyPID->isRunning){
@@ -51,8 +51,9 @@ void DannyLift(struct PIDPar* DannyPID){
 }//function for basic lift control via danny lift
 void ChainBarCtrl(struct PIDPar* CBar){
 	if(U5 == 1 || D5 == 1) {
+        slewRunning = false;
         CBar->isRunning = false;
-        manualLiftControl(350, 3500, analogRead(CBarPot), ChainBar, 0, U5, D5, false, false, false, true);
+        manualLiftControl(CBarMIN + 300, CBarMAX - 400, analogRead(CBarPot), ChainBar, 0, U5, D5, false, false, false, true);
     }
 	else {
         slewRunning = true;//MAYBE works for stopping frantic movement when transslating from manual to PID control

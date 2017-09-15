@@ -3,7 +3,7 @@
 float TruSpeed(float value){
 	//for all other polynomials; visit: goo.gl/mhvbx4
 	return(getSign(value)*(value*value) /(127));
-}//function for calculating the truSpeed function based off a quadratic polynomial
+}//function for calculating the truSpeed function based off a polynomial
 
 void drive(bool slew){
 	if(slew){

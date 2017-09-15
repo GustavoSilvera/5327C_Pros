@@ -12,13 +12,16 @@
 #define CW 1
 #define CCW -1
 
+extern int goalChainBar, goalDanny, goalMoGo;
+//sensor Values
+extern int CBarMAX, CBarMIN;
+extern int DannyMAX, DannyMIN;
+extern int MoGoMAX, MoGoMIN;
 
-extern float circum;
-extern float velocity;
-extern int goalChainBar;
-extern int goalDanny;
-extern int goalMoGo;
 volatile bool MoGoToggle;
+volatile bool slewRunning;
+
+extern float circum, velocity;
 float avg(float val1, float val2);
 float getSign(float check);
 struct robot{
@@ -26,7 +29,6 @@ struct robot{
    float Ypos;
    float deg;
 };
-bool slewRunning;
 struct maintainPosition{
    bool isRunning, armGoalIsSet;
    int threshold;
