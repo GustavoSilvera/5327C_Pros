@@ -7,7 +7,7 @@
 #define PID_DRIVE_MIN     (-127)
 #define PID_INTEGRAL_LIMIT  50
 #define PI 3.1415
-#define MOTOR_AMOUNT 8
+#define MOTOR_AMOUNT 9
 #define PIDSensorType encoderGet(encoder1)//analogRead(potentiometer)
 #define CW 1
 #define CCW -1
@@ -17,7 +17,8 @@ extern float circum;
 extern float velocity;
 extern int goalChainBar;
 extern int goalDanny;
-
+extern int goalMoGo;
+volatile bool MoGoToggle;
 float avg(float val1, float val2);
 float getSign(float check);
 struct robot{
@@ -25,7 +26,7 @@ struct robot{
    float Ypos;
    float deg;
 };
-
+bool slewRunning;
 struct maintainPosition{
    bool isRunning, armGoalIsSet;
    int threshold;

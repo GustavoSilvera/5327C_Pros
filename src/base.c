@@ -5,12 +5,16 @@ float TruSpeed(float value){
 	return(getSign(value)*(value*value) /(127));
 }//function for calculating the truSpeed function based off a quadratic polynomial
 
-void drive(){
-	//motorSlew[RightBaseM] = TruSpeed(joystickGetAnalog(1,2));//y axis for baseRight joystick
-	//motorSlew[LeftBaseM] = TruSpeed(joystickGetAnalog(1,3));//y acis for left  joystick
+void drive(bool slew){
+	if(slew){
+		motorSlew[RightBaseM] = TruSpeed(joystickGetAnalog(1,2));//y axis for baseRight joystick
+		motorSlew[LeftBaseM] = TruSpeed(joystickGetAnalog(1,3));//y acis for left  joystick
+	}
 	//noSLEW
-	motorSet(RightBaseM, TruSpeed(joystickGetAnalog(1,2)));
-	motorSet(LeftBaseM, TruSpeed(joystickGetAnalog(1,3)));
+	else{
+		motorSet(RightBaseM, TruSpeed(joystickGetAnalog(1,2)));
+		motorSet(LeftBaseM, TruSpeed(joystickGetAnalog(1,3)));
+	}
 }//function for driving the robot
 
 void fwds(int speed){
@@ -27,7 +31,7 @@ void driveFor(float goal){
 		if(millis() - StartTime < abs(goal) * 1000){
 			fwds(dP * ( ( goal*circum - encoderGet(encoder1) - velocity ) * (10/goal) ) );//SO GOOD
 		}
-		else break;//do something fancy for checking stalls
+		else return;//do something fancy for checking stalls
 	}
 	return;
 }

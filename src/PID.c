@@ -3,7 +3,7 @@
 void pidController(void * parameters){
 	struct PIDPar * tP = (struct PIDPar*) parameters;//creates pointer to tP (task parameters)
 	int error;
-	int minSpeed = 40;
+	int minSpeed = 30;
 	int dir = 1;
 	if(tP->reversed) dir = -1;
 	int moppo;
@@ -22,7 +22,7 @@ void pidController(void * parameters){
 					 motorSlew[tP->motor2] = moppo * power;//slewing PID
 				 }
         	}
-        	else if(abs(motorGet(tP->motor1)) > 18){//lowest motor power until squeals
+        	else if(abs(motorGet(tP->motor1)) > 20){//lowest motor power until squeals
                 float power = dir * minSpeed;
 				if(!tP->slew) {
 					motorSet(tP->motor1, power);
@@ -43,7 +43,7 @@ void pidController(void * parameters){
 					 motorSlew[tP->motor2] = 0;//slewing PID
 				 }
             }
-        	delay(5);
+        	delay(2);
         }
 	}
 }

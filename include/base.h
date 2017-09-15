@@ -3,7 +3,7 @@
 #include "globals.h"
 
 float TruSpeed(float value);
-void drive();
+void drive(bool slew);
 void fwds(int speed);
 void rot(int speed);
 void rotFor(int goal);

@@ -105,11 +105,12 @@ void initialize();
 #define JRightY	joystickGetAnalog(1,2)
 #define JLeftX 	joystickGetAnalog(1,4)
 #define JLeftY	joystickGetAnalog(1,3)
-//or if want simpler porting from robotc code
-#define vexRTCh1	joystickGetAnalog(1,1)
-#define vexRTCh2	joystickGetAnalog(1,2)
-#define vexRTCh3	joystickGetAnalog(1,3)
-#define vexRTCh4	joystickGetAnalog(1,4)
+
+//PARTNER JOYSTICK
+    #define JRightX2	joystickGetAnalog(2,1)
+    #define JRightY2	joystickGetAnalog(2,2)
+    #define JLeftX2 	joystickGetAnalog(2,4)
+    #define JLeftY2 	joystickGetAnalog(2,3)
 
 enum {//motors
     useless = 1,//port1 (DONT EVER USE)
@@ -149,6 +150,23 @@ extern Ultrasonic Usonic;
 #define L8    	joystickGetDigital(1,8,JOY_LEFT)//8L
 #define R8	    joystickGetDigital(1,8,JOY_RIGHT)//8R
 
+//PARTNER JOYSTICK
+
+#define U52    	joystickGetDigital(2,5,JOY_UP)//5U
+#define D52	    joystickGetDigital(2,5,JOY_DOWN)//5D
+
+#define U62  	joystickGetDigital(2,6,JOY_UP)//6U
+#define D62	    joystickGetDigital(2,6,JOY_DOWN)//6D
+
+#define U72  	joystickGetDigital(2,7,JOY_UP)//7U
+#define D72	    joystickGetDigital(2,7,JOY_DOWN)//7D
+#define L72    	joystickGetDigital(2,7,JOY_LEFT)//7L
+#define R72	    joystickGetDigital(2,7,JOY_RIGHT)//7R
+
+#define U82  	joystickGetDigital(2,8,JOY_UP)//8U
+#define D82	    joystickGetDigital(2,8,JOY_DOWN)//8D
+#define L82    	joystickGetDigital(2,8,JOY_LEFT)//8L
+#define R82	    joystickGetDigital(2,8,JOY_RIGHT)//8R
 
 // End C++ export structure
 #ifdef __cplusplus
