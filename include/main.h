@@ -114,13 +114,14 @@ void initialize();
 
 enum {//motors
     useless = 1,//port1 (DONT EVER USE)
-    RightBaseM = 2,//right base motors
-    LeftBaseM = 3,//left base motors
-    DannyLiftMR = 4,//lift right motors
-    MoGo = 5,//mobile goal
-    ChainBar = 6,//chain bar
-    Claw = 7,//claw control
-    DannyLiftML = 8//lift left motor
+    LeftBaseYCable = 2,//left base motors
+    LeftBase = 3,//left base motors
+    FourBarYCable = 4,//lift left motor
+    //no 5th motre
+    liftYCable = 6,//claw control
+    MoGoYCable = 7,//right base motors
+    RightBaseYCable = 8,//lift right motors
+    RightBase = 9,//chain bar
 };
 //#define gyroscope 1
 extern Gyro gyroscope;
@@ -128,8 +129,8 @@ extern Encoder encoder1;
 extern Ultrasonic Usonic;
 
 #define MoGoPot 2
-#define CBarPot 3
-#define DannyPot 4
+#define FourBarPot 3
+#define LiftPot 4
 #define button 8//digital button port
 
 

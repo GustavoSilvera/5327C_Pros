@@ -27,4 +27,15 @@
  * so, the robot will await a switch to another mode or disable/enable cycle.
  */
 void autonomous() {
+    while(analogRead(MoGoPot) > MoGoMIN + 100) MoGoLift(-1 * abs(analogRead(MoGoPot) - MoGoMIN));
+    driveFor(-60);
+	int initTime = millis();
+	while( initTime - millis() < 2000) fwds(-127);
+    delay(300);
+    //while(analogRead(MoGoPot) < MoGoMAX) MoGoLift(abs(analogRead(MoGoPot) - MoGoMAX));
+    //delay(400);d
+    //rotFor(180);
+    //driveFor(-60);
+    //while(analogRead(MoGoPot) > MoGoMIN) MoGoLift(-1 * abs(analogRead(MoGoPot) - MoGoMIN));
+    return;
 }

@@ -1,78 +1,96 @@
 #include "main.h"
 
-void manualLiftControl(int min, int max, int sensorRead, int motor1, int motor2, int buttonUp, int buttonDown, bool reversed, bool slew, bool Mopposite, bool usingPID){
+void manualLiftControl(int min, int max, int sensorRead, int motor1, int motor2, int buttonUp, int buttonDown, int buttonUp2, int buttonDown2, bool reversed, bool slew, bool Mopposite, bool usingPID, int maxSpeed){
     int dir = 1;
 	if(reversed) dir = -1;
     int moppo = 1;//switch ONE of the 2 motors (y cabled or opposite)
     if(Mopposite) moppo = -1;
-    if(sensorRead <= min && buttonUp == 1 && usingPID) 			{return;}///dont want to disturb the PID gods
-	else if(sensorRead >= max && buttonDown == 1 && usingPID) 	{return;}//dont want to disturb the PID gods
-    else if(sensorRead <= min && buttonUp == 1 && !usingPID) 	{motorSet(motor1, 0); motorSet(motor2, 0); return;}
-	else if(sensorRead >= max && buttonDown == 1 && !usingPID) 	{motorSet(motor1, 0); motorSet(motor2, 0);return;}
-	else if(buttonUp == 1 && sensorRead > min && slew)  	    {motorSlew[motor1] = dir * 127; motorSlew[motor2] = moppo * dir * 127;}
-	else if(buttonUp == 1 && sensorRead > min && !slew) 	    {motorSet(motor1, dir * 127); motorSet(motor2, moppo * dir * 127);}
-	else if (buttonDown == 1 && sensorRead < max && slew) 	    {motorSlew[motor1] = -dir * 127; motorSlew[motor2] = moppo * -dir * 127;}
-	else if (buttonDown == 1 && sensorRead < max && !slew) 	    {motorSet(motor1, -dir * 127); motorSet(motor2, moppo * -dir * 127);}
-	else if(!slew) 											    {motorSet(motor1, 0); motorSet(motor2, 0); return;}
-	else /*yes slew*/										    {motorSlew[motor1] = 0; motorSlew[motor2] = 0; return;}
+    bool upButton = (buttonUp == 1 || buttonUp2 == 1);
+    bool downButton = (buttonDown == 1 || buttonDown2 == 1);
+    if(!upButton && !downButton) {motorSet(motor1, 0); motorSet(motor2, 0); return;}
+    else if(sensorRead >= max && (upButton) ) 			{motorSet(motor1, 0); motorSet(motor2, 0); return;}///dont want to disturb the PID gods
+	else if(sensorRead <= min && (downButton)) {motorSet(motor1, 0); motorSet(motor2, 0); return;}//dont want to disturb the PID gods
+    //else if(sensorRead >= max && (buttonUp == 1 || buttonUp2 == 1) ) 	{motorSet(motor1, 0); motorSet(motor2, 0); return;}
+	//else if(sensorRead <= min && (buttonDown == 1 || buttonDown2 == 1) ){motorSet(motor1, 0); motorSet(motor2, 0);return;}
+	//slew//else if((buttonUp == 1 || buttonUp2 == 1) && sensorRead < max && slew)  	    {motorSlew[motor1] = dir * maxSpeed; motorSlew[motor2] = moppo * dir * maxSpeed;}
+	else if((upButton) && sensorRead < max && !slew) 	    {motorSet(motor1, dir * maxSpeed); motorSet(motor2, moppo * dir * maxSpeed);}
+	//slew//else if ((buttonDown == 1 || buttonDown2 == 1) && sensorRead > min && slew) 	{motorSlew[motor1] = -dir * maxSpeed; motorSlew[motor2] = moppo * -dir * maxSpeed;}
+	else if ((downButton) && sensorRead > min && !slew)    {motorSet(motor1, dir * -maxSpeed); motorSet(motor2, moppo * dir * -maxSpeed);}
+	else /*if(!slew)*/											                        {motorSet(motor1, 0); motorSet(motor2, 0); return;}
+//	else /*yes slew*/										                        {motorSlew[motor1] = 0; motorSlew[motor2] = 0; return;}
 }
-void MobileGoal(struct PIDPar* MoGoPID, TaskHandle PIDTask){//real noice rn
-	if(U7 == 1 || D7 == 1){
-        MoGoPID->isRunning = false;
-        taskSuspend(PIDTask);
-        manualLiftControl(MoGoMIN + 200, MoGoMAX - 200, analogRead(MoGoPot), MoGo, 0, U7, D7, true, false, false, true);
+void MoGoLift(int speed){
+    motorSet(MoGoYCable, speed);
+}
+void MobileGoal(){//real noice rn
+    manualLiftControl(MoGoMIN, MoGoMAX, analogRead(MoGoPot), MoGoYCable, 0, U5, D5, U52, D52, false, false, false, false, 127);
+
+    /*if(U8 == 1 || D8 == 1 ){//}|| U5 == 1 || D5 == 1){
+        MoGoAuton = false;
+        int min = MoGoMIN + 400;
+        int max = MoGoMAX - 400;
+    //    if(analogRead(MoGoPot) <= min && (U8 == 1 || U5 == 1)) 			{motorSet(MoGo, 0);return;}///dont want to disturb the PID gods
+    //	else if(analogRead(MoGoPot) >= max && (D8 == 1 || D5 == 1)) 	  {motorSet(MoGo, 0);return;}//dont want to disturb the PID gods
+    //	else if( (U8 == 1 || U5 == 1) && analogRead(MoGoPot) > min )  	    {motorSet(MoGo, -127);}
+    //	else if ( (D8 == 1 || D5 == 1) && analogRead(MoGoPot) < max) 	    {motorSet(MoGo, 127);}
+    //	else               										        {motorSet(MoGo, 0);}
+
     }
 	else{
-        /*if(!MoGoPID->isRunning){
-		    goalMoGo = analogRead(MoGoPot);//sets PID goal for chain bar
-        }*/
-        taskResume(PIDTask);//turn on pid again
-        MoGoPID->isRunning = true;
-        if(MoGoToggle == true){
-            goalMoGo = MoGoMAX;
+        if(MoGoAuton){
+            if(MoGoToggle) {//brings down
+                if(analogRead(MoGoPot) > MoGoMIN) MoGoLift(-1 * abs(analogRead(MoGoPot) - MoGoMIN));
+                else MoGoLift(0);
+            }
+            else{///brings up
+                if(analogRead(MoGoPot) < MoGoMAX) MoGoLift(abs(analogRead(MoGoPot) - MoGoMAX));
+                else MoGoLift(0);
+            }
         }
-        else{
-            goalMoGo = MoGoMIN;
-        }
-        delay(300);
-    };//fancy pid
+    };*/
 }//function for controlling the position of the mobile goal intake
-void DannyLift(struct PIDPar* DannyPID, TaskHandle PIDTask){
+void LiftLift(struct PIDPar* LiftPID, TaskHandle PIDTask){
 //basic lift control
-	if(U6 == 1 || D6 == 1){
-        taskSuspend(PIDTask);
-        DannyPID->isRunning = false;
-        manualLiftControl(DannyMIN + 100, DannyMAX - 100, analogRead(DannyPot), DannyLiftMR, DannyLiftML, U6, D6, true, false, true, true);
+	if(U6 == 1 || D6 == 1 || U62 == 1 || D62 == 1){
+        //taskSuspend(PIDTask);
+        LiftPID->isRunning = false;
+        manualLiftControl(LiftMIN + 100, LiftMAX, analogRead(LiftPot), liftYCable, 0, U6, D6, U62, D62, true, false, true, true, 127);
 	}
 	else {
-        taskResume(PIDTask);//turn on pid again
-        if(!DannyPID->isRunning){
-            goalDanny = analogRead(DannyPot);
+        //taskResume(PIDTask);//turn on pid again
+        if(!LiftPID->isRunning){
+            goalLift = analogRead(LiftPot);
         }
-        DannyPID->isRunning = true;
+        LiftPID->isRunning = true;
     }
 	//delay(10);
-}//function for basic lift control via danny lift
-void ChainBarCtrl(struct PIDPar* CBar, TaskHandle PIDTask, TaskHandle SlewTask){
-	if(U5 == 1 || D5 == 1) {
+}//function for basic lift control via Lift lift
+void FourBarCtrl(struct PIDPar* FourBar, TaskHandle PIDTask, TaskHandle SlewTask){
+	if(U52 == 1 || D52 == 1 || U5 == 1 || D5 == 1) {
         taskSuspend(SlewTask);
-        taskSuspend(PIDTask);
+        //taskSuspend(PIDTask);
         slewRunning = false;
-        CBar->isRunning = false;
-        manualLiftControl(CBarMIN + 300, CBarMAX - 400, analogRead(CBarPot), ChainBar, 0, U5, D5, false, false, false, true);
+        FourBar->isRunning = false;
+        /*    if(analogRead(FourBarPot) <= min && (U5 == 1 || U52 == 1)) 		 	{motorSet(FourBarYCable, 0); return;}///dont want to disturb the PID gods
+        	else if(analogRead(FourBarPot) >= max && (D5 == 1 || D52 == 1)) 	    {motorSet(FourBarYCable, 0); return;}//dont want to disturb the PID gods
+        	else if( (U5 == 1 || U52 == 1) && analogRead(FourBarPot) > min )  	    {motorSet(FourBarYCable, analogRead(FourBarPot) - FourBarMAX);}
+            else if ( (D5 == 1 || D52 == 1) && analogRead(FourBarPot) < max) 	    {motorSet(FourBarYCable, analogRead(FourBarPot) - FourBarMIN);}
+        	else               										            {motorSet(FourBarYCable, 0);}
+            */
+        manualLiftControl(FourBarMIN + 300, FourBarMAX - 400, analogRead(FourBarPot), FourBarYCable, 0, U8, D8, U82, D82, false, false, false, true, 80);
     }
 	else {
-        taskResume(PIDTask);//turn on pid again
-        if(!CBar->isRunning){
+        //taskResume(PIDTask);//turn on pid again
+        if(!FourBar->isRunning){
             taskResume(SlewTask);
             slewRunning = true;//MAYBE works for stopping frantic movement when transslating from manual to PID control
-            motorSlew[ChainBar] = 0;
+            motorSlew[FourBarYCable] = 0;
             delay(150);
-            motorSet(ChainBar, 0);
-            goalChainBar = analogRead(CBarPot);//sets PID goal for chain bar
+            motorSet(FourBarYCable, 0);
+            goalFourBar = analogRead(FourBarPot);//sets PID goal for chain bar
         }
         taskSuspend(SlewTask);
-        CBar->isRunning = true;
+        FourBar->isRunning = true;
         slewRunning = false;
     }
 }//function for basic lift control via chain bar

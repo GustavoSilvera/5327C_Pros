@@ -1,15 +1,12 @@
 #include "main.h"
 
 
-int CBarMAX = 4000;
-int CBarMIN = 100;
-int DannyMAX = 2800;
-int DannyMIN = 600;
-int MoGoMAX = 2200;
-int MoGoMIN = 800;
-
-
-
+int FourBarMAX = 4000;
+int FourBarMIN = 100;
+int LiftMAX = 2800;
+int LiftMIN = 600;
+int MoGoMAX = 2500;
+int MoGoMIN = 900;
 
 float circum = 4 * PI;
 float velocity;

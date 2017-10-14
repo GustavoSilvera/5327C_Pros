@@ -3,18 +3,20 @@
 
 #include "pid.h"
 
-int goalChainBar;
-int goalDanny;
+int goalFourBar;
+int goalLift;
 int goalMoGo;
 
 void lift(int speed);
 void manualLiftControl(
     int min, int max, int sensorRead,
     int motor1, int motor2,
-    int buttonUp, int buttonDown,
-    bool reversed, bool slew, bool Mopposite, bool usingPID
+    int buttonUp, int buttonDown, int buttonUp2, int buttonDown2,
+    bool reversed, bool slew, bool Mopposite, bool usingPID,
+    int maxSpeed
 );
-void MobileGoal( struct PIDPar* MoGoPID, TaskHandle PIDTask);
-void DannyLift( struct PIDPar* DannyPID, TaskHandle PIDTask);
-void ChainBarCtrl(struct PIDPar* CBar, TaskHandle PIDTask, TaskHandle SlewTask);
+void MoGoLift(int speed);
+void MobileGoal();
+void LiftLift( struct PIDPar* LiftPID, TaskHandle PIDTask);
+void FourBarCtrl(struct PIDPar* CBar, TaskHandle PIDTask, TaskHandle SlewTask);
 #endif

@@ -7,43 +7,47 @@ float TruSpeed(float value){
 
 void drive(bool slew){
 	if(slew){
-		motorSlew[RightBaseM] = TruSpeed(joystickGetAnalog(1,2));//y axis for baseRight joystick
-		motorSlew[LeftBaseM] = TruSpeed(joystickGetAnalog(1,3));//y acis for left  joystick
+	//	motorSlew[RightBaseM] = TruSpeed(joystickGetAnalog(1,2) + joystickGetAnalog(2,2));//y axis for baseRight joystick
+		//motorSlew[LeftBaseM] = TruSpeed(joystickGetAnalog(1,3) + joystickGetAnalog(2,3));//y acis for left  joystick
 	}
 	//noSLEW
 	else{
-		motorSet(RightBaseM, TruSpeed(joystickGetAnalog(1,2)));
-		motorSet(LeftBaseM, TruSpeed(joystickGetAnalog(1,3)));
+		motorSet(RightBaseYCable, TruSpeed(joystickGetAnalog(1,2) + joystickGetAnalog(2,2)));
+		motorSet(RightBase, TruSpeed(joystickGetAnalog(1,2) + joystickGetAnalog(2,2)));
+		motorSet(LeftBaseYCable, TruSpeed(joystickGetAnalog(1,3) + joystickGetAnalog(2,3)));
+		motorSet(LeftBase, TruSpeed(joystickGetAnalog(1,3) + joystickGetAnalog(2,3)));
 	}
 }//function for driving the robot
 
 void fwds(int speed){
-	motorSet(RightBaseM, speed);
-	motorSet(LeftBaseM, speed);
+	motorSet(LeftBaseYCable, speed);
+	motorSet(LeftBase, speed);
+	motorSet(RightBaseYCable, speed);
+	motorSet(RightBase, speed);
 }
 
 void driveFor(float goal){
 	encoderReset(encoder1);
+	goal = goal*2;
 	int thresh = 10;//10 ticks
 	int StartTime = millis();
-	float dP = 2;//multiplier for velocity controller
+	float dP = 5;//multiplier for velocity controller
 	while ( abs(goal*circum - encoderGet(encoder1)) > thresh){
-		if(millis() - StartTime < abs(goal) * 1000){
-			fwds(dP * ( ( goal*circum - encoderGet(encoder1) - velocity ) * (10/goal) ) );//SO GOOD
-		}
-		else return;//do something fancy for checking stalls
+		fwds(getSign(goal) * abs(dP * ( ( goal*circum - encoderGet(encoder1) - velocity ) * (10/goal) ) ) );//SO GOOD
 	}
 	return;
 }
 void rot(int speed){
-	motorSet(RightBaseM, -speed);
-	motorSet(LeftBaseM,   speed);
+	motorSet(LeftBaseYCable, -speed);
+	motorSet(LeftBase, -speed);
+	motorSet(RightBaseYCable, speed);
+	motorSet(RightBase, speed);
 }
 void rotFor(int goal){//very simple, minimal rotation function
 	gyroReset(gyroscope);
-	int thresh = 2;//4 degrees
+	int thresh = 4;//4 degrees
 	while ( abs(gyroGet(gyroscope) - goal) > thresh){
-		rot(gyroGet(gyroscope) - goal);
+		rot(1.5*(gyroGet(gyroscope) - goal));
 	}
 	return;
 }

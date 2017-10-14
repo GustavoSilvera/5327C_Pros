@@ -12,13 +12,11 @@ void MotorSlewRateTask( void * parameters){//slew rate task
 	//	SlewAmount[motorI] = 20;//allow the initial slew change to be 15 (anything else and the motor basically wont move)
 	//}//USED FOR INITIALIZING EVERY MOTOR_AMOUNT
 	SlewAmount[useless] = 10;//useless motre anyways.
-	SlewAmount[RightBaseM] = 50;//lots o' speed
-	SlewAmount[LeftBaseM] = 50;//lots o' speed
-	SlewAmount[DannyLiftML] = 40;//want more speed
-	SlewAmount[DannyLiftMR] = 40;//want more speed
-	SlewAmount[MoGo] = 10;//higher torque
-	SlewAmount[ChainBar] = 45;
-	SlewAmount[Claw] = 10;
+	SlewAmount[RightBase] = 50;//lots o' speed
+	SlewAmount[RightBaseYCable] = 50;//lots o' speed
+	SlewAmount[liftYCable] = 40;//want more speed
+	SlewAmount[FourBarYCable] = 40;//want more speed
+	SlewAmount[MoGoYCable] = 10;//higher torque
 	while(true){// run loop for every motor
 		if(slewRunning){
 			for( motorI = 0; motorI <= MOTOR_AMOUNT; motorI++){

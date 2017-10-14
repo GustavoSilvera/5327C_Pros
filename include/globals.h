@@ -12,12 +12,14 @@
 #define CW 1
 #define CCW -1
 
-extern int goalChainBar, goalDanny, goalMoGo;
+extern int goalChainBar, goalLift, goalMoGo;
 //sensor Values
-extern int CBarMAX, CBarMIN;
-extern int DannyMAX, DannyMIN;
+extern int FourBarMAX, FourBarMIN;
+extern int LiftMAX, LiftMIN;
 extern int MoGoMAX, MoGoMIN;
 
+extern volatile bool toggle;
+volatile bool MoGoAuton;
 volatile bool MoGoToggle;
 volatile bool slewRunning;
 
