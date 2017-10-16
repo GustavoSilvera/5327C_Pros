@@ -52,45 +52,34 @@ void MobileGoal(){//real noice rn
 void LiftLift(struct PIDPar* LiftPID, TaskHandle PIDTask){
 //basic lift control
 	if(U6 == 1 || D6 == 1 || U62 == 1 || D62 == 1){
-        //taskSuspend(PIDTask);
         LiftPID->isRunning = false;
-        manualLiftControl(LiftMIN + 100, LiftMAX, analogRead(LiftPot), liftYCable, 0, U6, D6, U62, D62, true, false, true, true, 127);
+        manualLiftControl(LiftMIN, LiftMAX, analogRead(LiftPot), liftYCable, 0, U6, D6, U62, D62, false, false, false, false, 127);
 	}
 	else {
-        //taskResume(PIDTask);//turn on pid again
-        if(!LiftPID->isRunning){
-            goalLift = analogRead(LiftPot);
-        }
+        if(!LiftPID->isRunning) goalLift = analogRead(LiftPot);
         LiftPID->isRunning = true;
     }
 	//delay(10);
 }//function for basic lift control via Lift lift
 void FourBarCtrl(struct PIDPar* FourBar, TaskHandle PIDTask, TaskHandle SlewTask){
-	if(U52 == 1 || D52 == 1 || U5 == 1 || D5 == 1) {
+	if(U82 == 1 || D82 == 1 || U8 == 1 || D8 == 1) {
         taskSuspend(SlewTask);
         //taskSuspend(PIDTask);
         slewRunning = false;
         FourBar->isRunning = false;
-        /*    if(analogRead(FourBarPot) <= min && (U5 == 1 || U52 == 1)) 		 	{motorSet(FourBarYCable, 0); return;}///dont want to disturb the PID gods
+        /*if(analogRead(FourBarPot) <= min && (U5 == 1 || U52 == 1)) 		 	{motorSet(FourBarYCable, 0); return;}///dont want to disturb the PID gods
         	else if(analogRead(FourBarPot) >= max && (D5 == 1 || D52 == 1)) 	    {motorSet(FourBarYCable, 0); return;}//dont want to disturb the PID gods
         	else if( (U5 == 1 || U52 == 1) && analogRead(FourBarPot) > min )  	    {motorSet(FourBarYCable, analogRead(FourBarPot) - FourBarMAX);}
             else if ( (D5 == 1 || D52 == 1) && analogRead(FourBarPot) < max) 	    {motorSet(FourBarYCable, analogRead(FourBarPot) - FourBarMIN);}
         	else               										            {motorSet(FourBarYCable, 0);}
             */
-        manualLiftControl(FourBarMIN + 300, FourBarMAX - 400, analogRead(FourBarPot), FourBarYCable, 0, U8, D8, U82, D82, false, false, false, true, 80);
+        manualLiftControl(FourBarMIN, FourBarMAX, analogRead(FourBarPot), FourBarYCable, 0, U8, D8, U82, D82, true, false, false, true, 80);
     }
 	else {
         //taskResume(PIDTask);//turn on pid again
         if(!FourBar->isRunning){
-            taskResume(SlewTask);
-            slewRunning = true;//MAYBE works for stopping frantic movement when transslating from manual to PID control
-            motorSlew[FourBarYCable] = 0;
-            delay(150);
-            motorSet(FourBarYCable, 0);
             goalFourBar = analogRead(FourBarPot);//sets PID goal for chain bar
         }
-        taskSuspend(SlewTask);
         FourBar->isRunning = true;
-        slewRunning = false;
     }
 }//function for basic lift control via chain bar
