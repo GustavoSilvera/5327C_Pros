@@ -9,7 +9,7 @@ void pidController(void * parameters){
 	int moppo;
 	if(tP->Mopposite) moppo = -1;
 	for(;;){//while true
-        if(tP->isRunning){
+        if(false){//tP->isRunning){
         	error = (analogRead(tP->sensor) - *tP->goal);
         	if(abs(error) > minSpeed){
 				float power = tP->kP * (dir * error);

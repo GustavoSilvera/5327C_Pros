@@ -53,10 +53,10 @@ void LiftLift(struct PIDPar* LiftPID, TaskHandle PIDTask){
 //basic lift control
 	if(U6 == 1 || D6 == 1 || U62 == 1 || D62 == 1){
         LiftPID->isRunning = false;
-        manualLiftControl(LiftMIN, LiftMAX, analogRead(LiftPot), liftYCable, 0, U6, D6, U62, D62, false, false, false, false, 127);
+        manualLiftControl(LiftMIN, LiftMAX, encoderGet(liftEncoder), liftYCable, 0, U6, D6, U62, D62, false, false, false, false, 127);
 	}
 	else {
-        if(!LiftPID->isRunning) goalLift = analogRead(LiftPot);
+        if(!LiftPID->isRunning) goalLift = encoderGet(liftEncoder);
         LiftPID->isRunning = true;
     }
 	//delay(10);

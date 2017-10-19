@@ -106,7 +106,7 @@ void initialize();
 #define JLeftX 	joystickGetAnalog(1,4)
 #define JLeftY	joystickGetAnalog(1,3)
 
-//PARTNER JOYSTICK
+//PARTNER JOYSTICKer
     #define JRightX2	joystickGetAnalog(2,1)
     #define JRightY2	joystickGetAnalog(2,2)
     #define JLeftX2 	joystickGetAnalog(2,4)
@@ -126,11 +126,12 @@ enum {//motors
 //#define gyroscope 1
 extern Gyro gyroscope;
 extern Encoder encoder1;
+extern Encoder liftEncoder;
 extern Ultrasonic Usonic;
 
 #define MoGoPot 2
 #define FourBarPot 3
-#define LiftPot 4
+//#define LiftPot 4
 #define button 8//digital button port
 
 

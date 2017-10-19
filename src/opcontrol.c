@@ -7,6 +7,7 @@ volatile bool toggle = false;
 
 Gyro gyroscope;
 Encoder encoder1;
+Encoder liftEncoder;
 Ultrasonic Usonic;
 
 int currentTime = 0;
@@ -24,11 +25,11 @@ void initializeOpControl(){
 	current.deg = 0.0;
 	velocity = 0.0;
 	goalFourBar = analogRead(FourBarPot);
-	goalLift = analogRead(LiftPot);
+	goalLift = encoderGet(liftEncoder);
 }
 
 void debug(){
-	//printf("%d", encoderGet(encoder1));
+	//printf("%d", encoderGet(liftEncoder));
 	//printf("%d", digitalRead(button));//analogRead(FourBarPot));
 	printf("%d", analogRead(FourBarPot));
 	//printf("%d", ultrasonicGet(Usonic));
@@ -47,7 +48,7 @@ void grabStack(struct PIDPar* FourBar, struct PIDPar* LiftPID){//mini auton
 		delay(100);
 		goalLift = 950;
 		goalFourBar = 150;
-		if(abs(analogRead(LiftPot) - goalLift) > 200 && abs(analogRead(FourBarPot) - goalFourBar) > 150){
+		if(abs(encoderGet(liftEncoder) - goalLift) > 200 && abs(analogRead(FourBarPot) - goalFourBar) > 150){
 			delay(150);
 			toggle = true;currentTime = millis();
 			delay(300);
@@ -71,7 +72,7 @@ void grabStack(struct PIDPar* FourBar, struct PIDPar* LiftPID){//mini auton
 void auton2(){//for ONLY the first cone
 	goalFourBar = 1800;//have four bar go up sorta
 	if(U7 == 1) return;
-	goalLift = 1500;//have lift go up sorta
+	goalLift = LiftMAX;//have lift go up sorta
 	if(U7 == 1) return;
 	delay(800);//waits a sec
 	if(U7 == 1) return;
@@ -79,7 +80,7 @@ void auton2(){//for ONLY the first cone
 	if(U7 == 1) return;
 	delay(400);
 	if(U7 == 1) return;
-	goalLift = 800;//goes down to picks up cone
+	goalLift = 0;//goes down to picks up cone
 	if(U7 == 1) return;
 	delay(500);
 	if(U7 == 1) return;
@@ -87,35 +88,33 @@ void auton2(){//for ONLY the first cone
 	if(U7 == 1) return;
 	delay(400);
 	if(U7 == 1) return;
-	goalLift = 1500;
+	goalLift = LiftMAX;
 	if(U7 == 1) return;
 	delay(1000);
 	if(U7 == 1) return;
-	goalFourBar = FourBarMAX+100;
+	goalFourBar = FourBarMAX;
 	if(U7 == 1) return;
 	delay(500);
 	if(U7 == 1) return;
-	goalLift = 900;
+	goalLift = 50;
 	if(U7 == 1) return;
 	delay(600);
 	if(U7 == 1) return;
-	delay(200);
-	if(U7 == 1) return;
-	goalFourBar = FourBarMAX - 300;
-	if(U7 == 1) return;
-	goalFourBar = FourBarMAX + 100;
-	if(U7 == 1) return;
-	delay(200);
+	goalFourBar = FourBarMAX;
 	if(U7 == 1) return;
 	goalFourBar = FourBarMAX - 300;
 	if(U7 == 1) return;
 	delay(200);
 	if(U7 == 1) return;
-	goalFourBar = FourBarMAX + 100;
+	goalFourBar = FourBarMAX;
+	if(U7 == 1) return;
+	delay(200);
+	if(U7 == 1) return;
+	goalFourBar = FourBarMAX - 300;
 	if(U7 == 1) return;
 	delay(500);
 	if(U7 == 1) return;
-	goalFourBar = 1000;
+	goalFourBar = 2200;
 	if(U7 == 1) return;
 	return;
 }
@@ -173,12 +172,12 @@ void operatorControl(){//initializes everythin
 	FourBarPID->Mopposite = false;
 
 	struct PIDPar * LiftPID = (struct PIDPar *)malloc(sizeof(struct PIDPar));//allocates in memory
-	LiftPID->sensor = LiftPot;
+	LiftPID->sensor = liftEncoder;
 	LiftPID->goal = &goalLift;
 	LiftPID->motor1 = liftYCable;
 	LiftPID->motor2 = 0;
-	LiftPID->thresh = 10;
-	LiftPID->kP = 0.25;//lol lift is not vry efficient0.08
+	LiftPID->thresh = 1;
+	LiftPID->kP = 0.5;//lol lift is not vry efficient0.08
 	LiftPID->slew = false;
 	LiftPID->reversed = true;
 	LiftPID->isRunning = false;

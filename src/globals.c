@@ -1,10 +1,10 @@
 #include "main.h"
 
 
-int FourBarMAX = 2400;
-int FourBarMIN = 500;
-int LiftMAX = 2200;
-int LiftMIN = 800;
+int FourBarMAX = 3000;
+int FourBarMIN = 1000;
+int LiftMAX = 320;
+int LiftMIN = 0;
 int MoGoMAX = 2500;
 int MoGoMIN = 900;
 

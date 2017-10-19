@@ -28,8 +28,10 @@ void initialize() {
 
     gyroscope = gyroInit(1, 0);//port 1 no multiplier
     encoder1 = encoderInit(1, 2, false);
+    liftEncoder = encoderInit(3, 4, false);
     Usonic = ultrasonicInit(3, 4);
     pinMode(6, OUTPUT);
-	encoderReset(encoder1);
+    encoderReset(encoder1);
+    encoderReset(liftEncoder);
 	gyroReset(gyroscope);
 }
